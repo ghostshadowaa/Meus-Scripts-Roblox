@@ -1,550 +1,575 @@
--- Miranda Hub - Steal a Brainrot
--- Script Único (Coloque como LocalScript em StarterPlayerScripts)
+-- 🛡️ ANTI-HIT & BRAINROT RADAR 🧠
+-- Coloque como LocalScript em StarterPlayerScripts
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
--- Criar RemoteEvents se não existirem
-local function createRemoteEvents()
-    local events = {
-        "MirandaGiveBeeGun",
-        "MirandaSpawnBrainrots", 
-        "MirandaClearBrainrots",
-        "MirandaFreezePlayer",
-        "MirandaUnfreezeAll",
-        "MirandaAreaEffect",
-        "MirandaBeeGunFire"
-    }
-    
-    for _, eventName in pairs(events) do
-        if not ReplicatedStorage:FindFirstChild(eventName) then
-            local remoteEvent = Instance.new("RemoteEvent")
-            remoteEvent.Name = eventName
-            remoteEvent.Parent = ReplicatedStorage
-        end
-    end
-end
+-- Configurações
+local ANTI_HIT_ENABLED = true
+local RADAR_ENABLED = true
+local MAX_DISTANCE = 200
 
-createRemoteEvents()
-
--- Configurações do Hub
-local MIRANDA_CONFIG = {
-    MAIN_COLOR = Color3.fromRGB(28, 28, 28),
-    ACCENT_COLOR = Color3.fromRGB(0, 170, 255),
-    TEXT_COLOR = Color3.fromRGB(255, 255, 255),
-    BUTTON_COLOR = Color3.fromRGB(45, 45, 45),
-    
-    HUB_SIZE = UDim2.new(0, 350, 0, 450),
-    BUTTON_SIZE = UDim2.new(0.9, 0, 0, 50),
-    
-    MOBILE_MODE = UserInputService.TouchEnabled
+-- Sistema Anti-Hit
+local AntiHitSystem = {
+    Enabled = true,
+    OriginalProperties = {},
+    Connections = {}
 }
 
--- Sistema de Interface Miranda
-local MirandaHub = {}
+-- Sistema de Radar
+local RadarSystem = {
+    Enabled = true,
+    TrackedBrainrots = {},
+    GUI = nil
+}
 
-function MirandaHub:CreateScreenGui()
+-- Função para ativar Anti-Hit 100%
+function AntiHitSystem:Enable()
+    if not self.Enabled then return end
+    
+    local character = Player.Character
+    if not character then
+        Player.CharacterAdded:Wait()
+        character = Player.Character
+    end
+    
+    -- Remover colisões de todas as partes
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            self.OriginalProperties[part] = {
+                CanCollide = part.CanCollide,
+                CanTouch = part.CanTouch
+            }
+            part.CanCollide = false
+            part.CanTouch = false
+        end
+    end
+    
+    -- Proteção contra dano
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        -- Conexão para cancelar dano
+        self.Connections.healthChange = humanoid.HealthChanged:Connect(function()
+            if humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = humanoid.MaxHealth
+            end
+        end)
+        
+        -- Conexão para quando leva dano
+        self.Connections.damage = humanoid.Touched:Connect(function() end)
+        
+        -- Imunidade a dano
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
+    end
+    
+    -- Reconectar quando character morrer/respawnar
+    self.Connections.characterAdded = Player.CharacterAdded:Connect(function(newChar)
+        wait(1) -- Esperar character carregar
+        self:Enable()
+    end)
+    
+    -- Loop de proteção contínua
+    coroutine.wrap(function()
+        while self.Enabled and character and character.Parent do
+            -- Manter vida máxima
+            if humanoid and humanoid.Health < humanoid.MaxHealth then
+                humanoid.Health = humanoid.MaxHealth
+            end
+            
+            -- Manter partes sem colisão
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                    part.CanTouch = false
+                end
+            end
+            
+            RunService.Heartbeat:Wait()
+        end
+    end)()
+    
+    print("🛡️ Anti-Hit ATIVADO - 100% Imune")
+end
+
+-- Função para desativar Anti-Hit
+function AntiHitSystem:Disable()
+    self.Enabled = false
+    
+    -- Restaurar propriedades originais
+    for part, properties in pairs(self.OriginalProperties) do
+        if part and part.Parent then
+            part.CanCollide = properties.CanCollide
+            part.CanTouch = properties.CanTouch
+        end
+    end
+    
+    -- Desconectar conexões
+    for _, connection in pairs(self.Connections) do
+        connection:Disconnect()
+    end
+    
+    self.Connections = {}
+    self.OriginalProperties = {}
+    
+    print("🛡️ Anti-Hit DESATIVADO")
+end
+
+-- Sistema de Radar para Brainrots Valorizados
+function RadarSystem:CreateGUI()
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "MirandaHub"
+    screenGui.Name = "BrainrotRadar"
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.Parent = PlayerGui
     
-    return screenGui
-end
-
-function MirandaHub:CreateFloatingButton()
-    local button = Instance.new("ImageButton")
-    button.Name = "MirandaFloatingButton"
-    button.Size = MIRANDA_CONFIG.MOBILE_MODE and UDim2.new(0, 70, 0, 70) or UDim2.new(0, 60, 0, 60)
-    button.Position = UDim2.new(0, 20, 0.5, -35)
-    button.AnchorPoint = Vector2.new(0, 0.5)
-    button.BackgroundColor3 = MIRANDA_CONFIG.MAIN_COLOR
-    button.BackgroundTransparency = 0.15
-    button.Image = "rbxassetid://7072717366" -- Ícone padrão
-    button.ScaleType = Enum.ScaleType.Fit
-    
-    -- Efeitos visuais
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 15)
-    corner.Parent = button
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = MIRANDA_CONFIG.ACCENT_COLOR
-    stroke.Thickness = 2.5
-    stroke.Parent = button
-    
-    local glow = Instance.new("UIStroke")
-    glow.Color = MIRANDA_CONFIG.ACCENT_COLOR
-    glow.Thickness = 1
-    glow.Transparency = 0.7
-    glow.Parent = button
-    
-    -- Animação de pulso
-    coroutine.wrap(function()
-        while button and button.Parent do
-            local tween = TweenService:Create(glow, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness = 4})
-            tween:Play()
-            wait(1)
-            local tween2 = TweenService:Create(glow, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness = 1})
-            tween2:Play()
-            wait(1)
-        end
-    end)()
-    
-    return button
-end
-
-function MirandaHub:CreateMainFrame()
-    local frame = Instance.new("Frame")
-    frame.Name = "MirandaMainFrame"
-    frame.Size = MIRANDA_CONFIG.HUB_SIZE
-    frame.Position = UDim2.new(0.5, -175, 0.5, -225)
-    frame.BackgroundColor3 = MIRANDA_CONFIG.MAIN_COLOR
-    frame.BackgroundTransparency = 0.1
-    frame.Visible = false
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = frame
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = MIRANDA_CONFIG.ACCENT_COLOR
-    stroke.Thickness = 2
-    stroke.Parent = frame
-    
-    -- Sombra
-    local shadow = Instance.new("ImageLabel")
-    shadow.Name = "Shadow"
-    shadow.Size = UDim2.new(1, 10, 1, 10)
-    shadow.Position = UDim2.new(0, -5, 0, -5)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://8577639283"
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
-    shadow.ZIndex = 0
-    shadow.Parent = frame
-    
-    return frame
-end
-
-function MirandaHub:CreateTitleBar()
-    local titleFrame = Instance.new("Frame")
-    titleFrame.Name = "TitleBar"
-    titleFrame.Size = UDim2.new(1, 0, 0, 45)
-    titleFrame.Position = UDim2.new(0, 0, 0, 0)
-    titleFrame.BackgroundColor3 = MIRANDA_CONFIG.MAIN_COLOR
-    titleFrame.BackgroundTransparency = 0
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = titleFrame
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(0.7, 0, 1, 0)
-    titleLabel.Position = UDim2.new(0, 15, 0, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "🐝 MIRANDA HUB 🧠"
-    titleLabel.TextColor3 = MIRANDA_CONFIG.TEXT_COLOR
-    titleLabel.TextSize = 18
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Parent = titleFrame
-    
-    local closeButton = Instance.new("TextButton")
-    closeButton.Name = "CloseButton"
-    closeButton.Size = UDim2.new(0, 30, 0, 30)
-    closeButton.Position = UDim2.new(1, -35, 0.5, -15)
-    closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
-    closeButton.Text = "×"
-    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeButton.TextSize = 20
-    closeButton.Font = Enum.Font.GothamBold
-    
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
-    closeCorner.Parent = closeButton
-    closeButton.Parent = titleFrame
-    
-    return titleFrame, closeButton
-end
-
-function MirandaHub:CreateButton(text, icon)
-    local button = Instance.new("TextButton")
-    button.Name = text .. "Button"
-    button.Size = MIRANDA_CONFIG.BUTTON_SIZE
-    button.Position = UDim2.new(0.5, 0, 0, 0)
-    button.AnchorPoint = Vector2.new(0.5, 0)
-    button.BackgroundColor3 = MIRANDA_CONFIG.BUTTON_COLOR
-    button.Text = "   " .. (icon or "") .. " " .. text
-    button.TextColor3 = MIRANDA_CONFIG.TEXT_COLOR
-    button.TextSize = 14
-    button.Font = Enum.Font.Gotham
-    button.TextXAlignment = Enum.TextXAlignment.Left
+    -- Frame principal do radar
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "RadarFrame"
+    mainFrame.Size = UDim2.new(0, 300, 0, 200)
+    mainFrame.Position = UDim2.new(0, 20, 0, 20)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    mainFrame.BackgroundTransparency = 0.1
+    mainFrame.Visible = true
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = button
+    corner.Parent = mainFrame
     
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(80, 80, 80)
-    stroke.Thickness = 1
-    stroke.Parent = button
+    stroke.Color = Color3.fromRGB(0, 255, 0)
+    stroke.Thickness = 2
+    stroke.Parent = mainFrame
     
-    -- Ícone
-    if icon then
-        local iconLabel = Instance.new("TextLabel")
-        iconLabel.Size = UDim2.new(0, 25, 0, 25)
-        iconLabel.Position = UDim2.new(1, -30, 0.5, -12.5)
-        iconLabel.AnchorPoint = Vector2.new(1, 0.5)
-        iconLabel.BackgroundTransparency = 1
-        iconLabel.Text = icon
-        iconLabel.TextColor3 = MIRANDA_CONFIG.ACCENT_COLOR
-        iconLabel.TextSize = 16
-        iconLabel.Font = Enum.Font.GothamBold
-        iconLabel.Parent = button
-    end
+    -- Título
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Position = UDim2.new(0, 0, 0, 0)
+    title.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    title.BackgroundTransparency = 0
+    title.Text = "🧠 BRAINROT RADAR 🎯"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextSize = 14
+    title.Font = Enum.Font.GothamBold
     
-    -- Efeito hover
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(55, 55, 55)}):Play()
-    end)
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.Parent = title
+    title.Parent = mainFrame
     
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = MIRANDA_CONFIG.BUTTON_COLOR)}:Play()
-    end)
-    
-    return button
-end
-
-function MirandaHub:CreateScrollFrame()
+    -- Lista de brainrots
     local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Name = "ContentScroll"
-    scrollFrame.Size = UDim2.new(1, -20, 1, -65)
-    scrollFrame.Position = UDim2.new(0, 10, 0, 55)
+    scrollFrame.Name = "BrainrotList"
+    scrollFrame.Size = UDim2.new(1, -10, 1, -40)
+    scrollFrame.Position = UDim2.new(0, 5, 0, 35)
     scrollFrame.BackgroundTransparency = 1
     scrollFrame.BorderSizePixel = 0
     scrollFrame.ScrollBarThickness = 6
-    scrollFrame.ScrollBarImageColor3 = MIRANDA_CONFIG.ACCENT_COLOR
+    scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 0)
     
     local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = UDim.new(0, 10)
+    listLayout.Padding = UDim.new(0, 5)
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
     listLayout.Parent = scrollFrame
     
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 5)
-    padding.PaddingBottom = UDim.new(0, 5)
-    padding.Parent = scrollFrame
+    scrollFrame.Parent = mainFrame
+    mainFrame.Parent = screenGui
     
-    -- Ajustar tamanho automático
-    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+    self.GUI = screenGui
+    return screenGui
+end
+
+-- Função para escanear brainrots valorizados
+function RadarSystem:ScanBrainrots()
+    if not self.Enabled then return end
+    
+    local brainrots = {}
+    
+    -- Procurar brainrots no workspace
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and string.find(string.lower(obj.Name), "brainrot") then
+            local humanoid = obj:FindFirstChildOfClass("Humanoid")
+            local head = obj:FindFirstChild("Head")
+            
+            if humanoid and head then
+                -- Calcular valor baseado em características
+                local value = self:CalculateBrainrotValue(obj, humanoid)
+                local distance = (head.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+                
+                if distance <= MAX_DISTANCE then
+                    table.insert(brainrots, {
+                        Model = obj,
+                        Value = value,
+                        Distance = distance,
+                        Position = head.Position
+                    })
+                end
+            end
+        end
+    end
+    
+    -- Ordenar por valor (maior primeiro)
+    table.sort(brainrots, function(a, b)
+        return a.Value > b.Value
     end)
     
-    return scrollFrame
+    self.TrackedBrainrots = brainrots
+    self:UpdateRadarDisplay()
+    
+    return brainrots
 end
 
--- Sistema de Arrastar para Mobile
-local dragController = {
-    isDragging = false,
-    dragStart = nil,
-    buttonStartPos = nil
-}
-
-function dragController:Init(button, frame)
-    if not MIRANDA_CONFIG.MOBILE_MODE then return end
+-- Calcular valor do brainrot
+function RadarSystem:CalculateBrainrotValue(brainrot, humanoid)
+    local value = 0
     
-    local function onInputBegan(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            self.isDragging = true
-            self.dragStart = input.Position
-            self.buttonStartPos = button.Position
-            
-            -- Feedback visual
-            TweenService:Create(button, TweenInfo.new(0.1), {
-                Size = MIRANDA_CONFIG.MOBILE_MODE and UDim2.new(0, 65, 0, 65) or UDim2.new(0, 55, 0, 55),
-                BackgroundTransparency = 0.3
-            }):Play()
+    -- Baseado na vida
+    value = value + humanoid.MaxHealth
+    
+    -- Baseado na velocidade
+    value = value + (humanoid.WalkSpeed * 10)
+    
+    -- Baseado no tamanho
+    local head = brainrot:FindFirstChild("Head")
+    if head then
+        value = value + (head.Size.Magnitude * 50)
+    end
+    
+    -- Bônus por cores especiais
+    if head then
+        local color = head.BrickColor
+        if color == BrickColor.new("Bright red") then
+            value = value + 500 -- Brainrot forte
+        elseif color == BrickColor.new("Bright yellow") then
+            value = value + 300 -- Brainrot rápido
+        elseif color == BrickColor.new("Bright green") then
+            value = value + 200 -- Brainrot normal
+        elseif color == BrickColor.new("Bright blue") then
+            value = value + 400 -- Brainrot especial
         end
     end
     
-    local function onInputChanged(input)
-        if self.isDragging and input.UserInputType == Enum.UserInputType.Touch then
-            local delta = input.Position - self.dragStart
-            button.Position = UDim2.new(
-                self.buttonStartPos.X.Scale,
-                self.buttonStartPos.X.Offset + delta.X,
-                self.buttonStartPos.Y.Scale, 
-                self.buttonStartPos.Y.Offset + delta.Y
-            )
+    -- Bônus por materiais especiais
+    if head and head.Material == Enum.Material.Neon then
+        value = value + 100
+    end
+    
+    return math.floor(value)
+end
+
+-- Atualizar display do radar
+function RadarSystem:UpdateRadarDisplay()
+    if not self.GUI then return end
+    
+    local scrollFrame = self.GUI:FindFirstChild("RadarFrame"):FindFirstChild("BrainrotList")
+    if not scrollFrame then return end
+    
+    -- Limpar lista anterior
+    for _, child in pairs(scrollFrame:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
         end
     end
     
-    local function onInputEnded(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            self.isDragging = false
-            
-            TweenService:Create(button, TweenInfo.new(0.1), {
-                Size = MIRANDA_CONFIG.MOBILE_MODE and UDim2.new(0, 70, 0, 70) or UDim2.new(0, 60, 0, 60),
-                BackgroundTransparency = 0.15
-            }):Play()
+    -- Adicionar brainrots à lista
+    for i, brainrot in pairs(self.TrackedBrainrots) do
+        if i <= 8 then -- Limitar a 8 no display
+            self:CreateBrainrotEntry(scrollFrame, brainrot, i)
         end
     end
     
-    button.InputBegan:Connect(onInputBegan)
-    UserInputService.InputChanged:Connect(onInputChanged)
-    UserInputService.InputEnded:Connect(onInputEnded)
+    -- Ajustar tamanho do canvas
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, (#self.TrackedBrainrots * 35))
 end
 
--- Sistema de Funcionalidades
-local MirandaFunctions = {}
-
-function MirandaFunctions:GiveBeeGun()
-    ReplicatedStorage:WaitForChild("MirandaGiveBeeGun"):FireServer()
-end
-
-function MirandaFunctions:SpawnBrainrots()
-    ReplicatedStorage:WaitForChild("MirandaSpawnBrainrots"):FireServer()
-end
-
-function MirandaFunctions:ClearBrainrots()
-    ReplicatedStorage:WaitForChild("MirandaClearBrainrots"):FireServer()
-end
-
-function MirandaFunctions:FreezeNearest()
-    ReplicatedStorage:WaitForChild("MirandaFreezePlayer"):FireServer()
-end
-
-function MirandaFunctions:UnfreezeAll()
-    ReplicatedStorage:WaitForChild("MirandaUnfreezeAll"):FireServer()
-end
-
-function MirandaFunctions:AreaBeeEffect()
-    ReplicatedStorage:WaitForChild("MirandaAreaEffect"):FireServer()
-end
-
-function MirandaFunctions:AntiAFK()
-    -- Sistema anti-AFK automático
-    local virtualUser = game:GetService("VirtualUser")
-    Player.Idled:Connect(function()
-        virtualUser:CaptureController()
-        virtualUser:ClickButton2(Vector2.new())
-    end)
-end
-
--- Inicialização do Miranda Hub
-local screenGui = MirandaHub:CreateScreenGui()
-local floatingButton = MirandaHub:CreateFloatingButton()
-local mainFrame = MirandaHub:CreateMainFrame()
-local titleBar, closeButton = MirandaHub:CreateTitleBar()
-local scrollFrame = MirandaHub:CreateScrollFrame()
-
--- Montar a interface
-titleBar.Parent = mainFrame
-scrollFrame.Parent = mainFrame
-mainFrame.Parent = screenGui
-floatingButton.Parent = screenGui
-
--- Configurar arrastar para mobile
-dragController:Init(floatingButton, mainFrame)
-
--- Criar botões das funcionalidades
-local function createHubButtons()
-    local buttons = {
-        {"🐝 Obter Bee Gun", MirandaFunctions.GiveBeeGun},
-        {"🧠 Spawnar Brainrots", MirandaFunctions.SpawnBrainrots},
-        {"🗑️ Limpar Brainrots", MirandaFunctions.ClearBrainrots},
-        {"🎯 Travar Mais Próximo", MirandaFunctions.FreezeNearest},
-        {"🔓 Destravar Todos", MirandaFunctions.UnfreezeAll},
-        {"⚡ Bee em Área", MirandaFunctions.AreaBeeEffect},
-        {"⏰ Anti-AFK", MirandaFunctions.AntiAFK}
-    }
+-- Criar entrada na lista do radar
+function RadarSystem:CreateBrainrotEntry(parent, brainrot, index)
+    local entryFrame = Instance.new("Frame")
+    entryFrame.Name = "BrainrotEntry"
+    entryFrame.Size = UDim2.new(1, 0, 0, 30)
+    entryFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    entryFrame.BackgroundTransparency = 0.1
+    entryFrame.LayoutOrder = index
     
-    for i, buttonData in ipairs(buttons) do
-        local button = MirandaHub:CreateButton(buttonData[1])
-        button.LayoutOrder = i
-        button.Parent = scrollFrame
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = entryFrame
+    
+    -- Ícone do brainrot
+    local icon = Instance.new("TextLabel")
+    icon.Name = "Icon"
+    icon.Size = UDim2.new(0, 25, 0, 25)
+    icon.Position = UDim2.new(0, 5, 0.5, -12.5)
+    icon.BackgroundTransparency = 1
+    icon.Text = "🧠"
+    icon.TextColor3 = Color3.fromRGB(255, 255, 255)
+    icon.TextSize = 14
+    icon.Font = Enum.Font.GothamBold
+    icon.Parent = entryFrame
+    
+    -- Valor do brainrot
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Name = "Value"
+    valueLabel.Size = UDim2.new(0, 60, 0, 25)
+    valueLabel.Position = UDim2.new(0, 35, 0.5, -12.5)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = "💎 " .. brainrot.Value
+    valueLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    valueLabel.TextSize = 12
+    valueLabel.Font = Enum.Font.GothamBold
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Left
+    valueLabel.Parent = entryFrame
+    
+    -- Distância
+    local distanceLabel = Instance.new("TextLabel")
+    distanceLabel.Name = "Distance"
+    distanceLabel.Size = UDim2.new(0, 80, 0, 25)
+    distanceLabel.Position = UDim2.new(0, 100, 0.5, -12.5)
+    distanceLabel.BackgroundTransparency = 1
+    distanceLabel.Text = "📏 " .. math.floor(brainrot.Distance) .. "m"
+    distanceLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+    distanceLabel.TextSize = 11
+    distanceLabel.Font = Enum.Font.Gotham
+    distanceLabel.TextXAlignment = Enum.TextXAlignment.Left
+    distanceLabel.Parent = entryFrame
+    
+    -- Direção
+    local directionLabel = Instance.new("TextLabel")
+    directionLabel.Name = "Direction"
+    directionLabel.Size = UDim2.new(0, 50, 0, 25)
+    directionLabel.Position = UDim2.new(1, -55, 0.5, -12.5)
+    directionLabel.BackgroundTransparency = 1
+    directionLabel.Text = self:GetDirectionArrow(brainrot.Position)
+    directionLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+    directionLabel.TextSize = 16
+    directionLabel.Font = Enum.Font.GothamBold
+    directionLabel.Parent = entryFrame
+    
+    -- Efeito de destaque para os top 3
+    if index <= 3 then
+        local highlight = Instance.new("UIStroke")
+        highlight.Color = Color3.fromRGB(255, 215, 0) -- Ouro
+        highlight.Thickness = 2
+        highlight.Parent = entryFrame
         
-        button.MouseButton1Click:Connect(function()
-            buttonData[2]()
-            
-            -- Feedback de clique
-            TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = MIRANDA_CONFIG.ACCENT_COLOR}):Play()
-            wait(0.1)
-            TweenService:Create(button, TweenInfo.new(0.1), {BackgroundColor3 = MIRANDA_CONFIG.BUTTON_COLOR}):Play()
-        end)
-    end
-end
-
-createHubButtons()
-
--- Controles de Abertura/Fechamento
-floatingButton.MouseButton1Click:Connect(function()
-    if not dragController.isDragging then
-        mainFrame.Visible = not mainFrame.Visible
-        
-        if mainFrame.Visible then
-            -- Animação de entrada
-            mainFrame.Size = UDim2.new(0, 0, 0, 0)
-            mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-            
-            local tween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = MIRANDA_CONFIG.HUB_SIZE,
-                Position = UDim2.new(0.5, -175, 0.5, -225)
-            })
-            tween:Play()
+        if index == 1 then
+            valueLabel.TextColor3 = Color3.fromRGB(255, 215, 0) -- Ouro para #1
+        elseif index == 2 then
+            valueLabel.TextColor3 = Color3.fromRGB(192, 192, 192) -- Prata para #2
+        elseif index == 3 then
+            valueLabel.TextColor3 = Color3.fromRGB(205, 127, 50) -- Bronze para #3
         end
     end
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-end)
-
--- Fechar hub ao clicar fora (apenas mobile)
-if MIRANDA_CONFIG.MOBILE_MODE then
-    local backgroundCover = Instance.new("TextButton")
-    backgroundCover.Size = UDim2.new(1, 0, 1, 0)
-    backgroundCover.BackgroundTransparency = 1
-    backgroundCover.Text = ""
-    backgroundCover.ZIndex = 4
-    backgroundCover.Visible = false
-    backgroundCover.Parent = mainFrame
     
-    mainFrame:GetPropertyChangedSignal("Visible"):Connect(function()
-        backgroundCover.Visible = mainFrame.Visible
-    end)
-    
-    backgroundCover.MouseButton1Click:Connect(function()
-        mainFrame.Visible = false
-    end)
+    entryFrame.Parent = parent
 end
 
--- Sistema de Bee Gun (Local)
-local BeeGunSystem = {}
-
-function BeeGunSystem:EquipTool()
-    local tool = Instance.new("Tool")
-    tool.Name = "MirandaBeeGun"
-    tool.ToolTip = "Miranda Hub - Bee Gun"
-    tool.CanBeDropped = false
+-- Calcular direção (seta)
+function RadarSystem:GetDirectionArrow(brainrotPosition)
+    if not Player.Character then return "?" end
     
-    local handle = Instance.new("Part")
-    handle.Name = "Handle"
-    handle.Size = Vector3.new(1, 1, 3)
-    handle.BrickColor = BrickColor.new("Bright yellow")
-    handle.Material = Enum.Material.Neon
-    handle.Parent = tool
+    local charRoot = Player.Character:FindFirstChild("HumanoidRootPart")
+    if not charRoot then return "?" end
     
-    -- Configurar a ferramenta
-    tool.Equipped:Connect(function()
-        BeeGunSystem:OnEquipped()
-    end)
+    local charPos = charRoot.Position
+    local direction = (brainrotPosition - charPos).Unit
     
-    tool.Unequipped:Connect(function()
-        BeeGunSystem:OnUnequipped()
-    end)
+    local charForward = charRoot.CFrame.LookVector
+    local dotProduct = charForward:Dot(direction)
     
-    tool.Activated:Connect(function()
-        BeeGunSystem:OnActivated()
-    end)
+    local right = charRoot.CFrame.RightVector
+    local crossProduct = charForward:Cross(direction).Y
     
-    return tool
-end
-
-function BeeGunSystem:OnEquipped()
-    -- Mudar cursor
-    if not MIRANDA_CONFIG.MOBILE_MODE then
-        local mouse = Player:GetMouse()
-        mouse.Icon = "rbxassetid://7072716646"
+    if dotProduct > 0.7 then
+        return "↑" -- Frente
+    elseif dotProduct < -0.7 then
+        return "↓" -- Trás
+    elseif crossProduct > 0 then
+        return "→" -- Direita
+    else
+        return "←" -- Esquerda
     end
 end
 
-function BeeGunSystem:OnUnequipped()
-    -- Restaurar cursor
-    if not MIRANDA_CONFIG.MOBILE_MODE then
-        local mouse = Player:GetMouse()
-        mouse.Icon = ""
-    end
-end
-
-function BeeGunSystem:OnActivated()
-    -- Efeito de disparo
-    local character = Player.Character
-    if not character then return end
+-- Iniciar radar
+function RadarSystem:Start()
+    if not self.Enabled then return end
     
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
+    -- Criar GUI
+    self:CreateGUI()
     
-    -- Raycast para acertar jogadores
-    local params = RaycastParams.new()
-    params.FilterType = Enum.RaycastFilterType.Blacklist
-    params.FilterDescendantsInstances = {character}
-    
-    local startPos = character.Head.Position
-    local endPos = startPos + (character.Head.CFrame.LookVector * 100)
-    
-    local result = workspace:Raycast(startPos, endPos - startPos, params)
-    
-    if result then
-        local hit = result.Instance
-        local hitPlayer = Players:GetPlayerFromCharacter(hit.Parent)
-        
-        if hitPlayer then
-            ReplicatedStorage:WaitForChild("MirandaBeeGunFire"):FireServer(hitPlayer)
-            
-            -- Efeito visual de acerto
-            local hitEffect = Instance.new("Part")
-            hitEffect.Size = Vector3.new(2, 2, 2)
-            hitEffect.Position = result.Position
-            hitEffect.BrickColor = BrickColor.new("Bright yellow")
-            hitEffect.Material = Enum.Material.Neon
-            hitEffect.Anchored = true
-            hitEffect.CanCollide = false
-            hitEffect.Parent = workspace
-            
-            TweenService:Create(hitEffect, TweenInfo.new(0.5), {
-                Size = Vector3.new(4, 4, 4),
-                Transparency = 1
-            }):Play()
-            
-            game.Debris:AddItem(hitEffect, 0.5)
+    -- Loop de atualização do radar
+    coroutine.wrap(function()
+        while self.Enabled do
+            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                self:ScanBrainrots()
+            end
+            wait(1) -- Atualizar a cada 1 segundo
         end
-    end
+    end)()
+    
+    print("🎯 Radar de Brainrots ATIVADO")
 end
 
--- Receber Bee Gun do servidor
-ReplicatedStorage:WaitForChild("MirandaGiveBeeGun").OnClientEvent:Connect(function()
-    local backpack = Player:FindFirstChild("Backpack")
-    if backpack then
-        local beeGun = BeeGunSystem:EquipTool()
-        beeGun.Parent = backpack
-        
-        -- Notificação
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "Miranda Hub",
-            Text = "Bee Gun adicionada ao seu inventário!",
-            Duration = 3,
-            Icon = "rbxassetid://7072717366"
-        })
+-- Parar radar
+function RadarSystem:Stop()
+    self.Enabled = false
+    if self.GUI then
+        self.GUI:Destroy()
+        self.GUI = nil
     end
-end)
+    self.TrackedBrainrots = {}
+    print("🎯 Radar de Brainrots DESATIVADO")
+end
 
--- Notificação de inicialização
-wait(2)
+-- Interface de controle
+local ControlGUI = {}
+
+function ControlGUI:Create()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "AntiHitControls"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = PlayerGui
+    
+    -- Botão flutuante de controle
+    local controlButton = Instance.new("TextButton")
+    controlButton.Name = "ControlButton"
+    controlButton.Size = UDim2.new(0, 50, 0, 50)
+    controlButton.Position = UDim2.new(1, -70, 0, 20)
+    controlButton.AnchorPoint = Vector2.new(1, 0)
+    controlButton.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    controlButton.Text = "⚡"
+    controlButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    controlButton.TextSize = 20
+    controlButton.ZIndex = 10
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = controlButton
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(0, 255, 0)
+    stroke.Thickness = 2
+    stroke.Parent = controlButton
+    
+    -- Menu de controle
+    local menuFrame = Instance.new("Frame")
+    menuFrame.Name = "ControlMenu"
+    menuFrame.Size = UDim2.new(0, 150, 0, 120)
+    menuFrame.Position = UDim2.new(1, -160, 0, 80)
+    menuFrame.AnchorPoint = Vector2.new(1, 0)
+    menuFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    menuFrame.BackgroundTransparency = 0.1
+    menuFrame.Visible = false
+    
+    local menuCorner = Instance.new("UICorner")
+    menuCorner.CornerRadius = UDim.new(0, 8)
+    menuCorner.Parent = menuFrame
+    
+    local menuStroke = Instance.new("UIStroke")
+    menuStroke.Color = Color3.fromRGB(0, 255, 0)
+    menuStroke.Thickness = 2
+    menuStroke.Parent = menuFrame
+    
+    -- Botões do menu
+    local function createMenuButton(text, yPos, callback)
+        local button = Instance.new("TextButton")
+        button.Name = text .. "Button"
+        button.Size = UDim2.new(0.9, 0, 0, 25)
+        button.Position = UDim2.new(0.05, 0, 0, yPos)
+        button.BackgroundColor3 = Color3.fromRGB(45, 45, 65)
+        button.Text = text
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextSize = 12
+        button.Font = Enum.Font.Gotham
+        
+        local buttonCorner = Instance.new("UICorner")
+        buttonCorner.CornerRadius = UDim.new(0, 6)
+        buttonCorner.Parent = button
+        
+        button.MouseButton1Click:Connect(callback)
+        button.Parent = menuFrame
+        
+        return button
+    end
+    
+    -- Criar botões do menu
+    local antiHitButton = createMenuButton("🛡️ Anti-Hit: ON", 10, function()
+        ANTI_HIT_ENABLED = not ANTI_HIT_ENABLED
+        if ANTI_HIT_ENABLED then
+            AntiHitSystem:Enable()
+            antiHitButton.Text = "🛡️ Anti-Hit: ON"
+            antiHitButton.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+        else
+            AntiHitSystem:Disable()
+            antiHitButton.Text = "🛡️ Anti-Hit: OFF"
+            antiHitButton.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+        end
+    end)
+    
+    local radarButton = createMenuButton("🎯 Radar: ON", 40, function()
+        RADAR_ENABLED = not RADAR_ENABLED
+        if RADAR_ENABLED then
+            RadarSystem:Start()
+            radarButton.Text = "🎯 Radar: ON"
+            radarButton.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+        else
+            RadarSystem:Stop()
+            radarButton.Text = "🎯 Radar: OFF"
+            radarButton.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+        end
+    end)
+    
+    local refreshButton = createMenuButton("🔄 Atualizar", 70, function()
+        if RADAR_ENABLED then
+            RadarSystem:ScanBrainrots()
+        end
+    end)
+    
+    -- Controle de visibilidade do menu
+    controlButton.MouseButton1Click:Connect(function()
+        menuFrame.Visible = not menuFrame.Visible
+    end)
+    
+    -- Fechar menu ao clicar fora
+    local function closeMenu()
+        menuFrame.Visible = false
+    end
+    
+    controlButton.Parent = screenGui
+    menuFrame.Parent = screenGui
+    
+    return screenGui
+end
+
+-- Inicialização
+wait(2) -- Esperar carregamento
+
+-- Criar controles
+ControlGUI:Create()
+
+-- Iniciar sistemas
+if ANTI_HIT_ENABLED then
+    AntiHitSystem:Enable()
+end
+
+if RADAR_ENABLED then
+    RadarSystem:Start()
+end
+
+-- Notificação
 game.StarterGui:SetCore("SendNotification", {
-    Title = "Miranda Hub",
-    Text = "Hub carregado com sucesso! Use o botão flutuante.",
+    Title = "🛡️ ANTI-HIT & RADAR 🎯",
+    Text = "Sistemas ativados com sucesso!",
     Duration = 5,
     Icon = "rbxassetid://7072717366"
 })
 
-print("🎮 Miranda Hub - Steal a Brainrot carregado!")
-print("📱 Modo Mobile: " .. tostring(MIRANDA_CONFIG.MOBILE_MODE))
+print("🎮 Sistema Anti-Hit & Radar carregado!")
+print("🛡️ Anti-Hit: " .. (ANTI_HIT_ENABLED and "ATIVADO" or "DESATIVADO"))
+print("🎯 Radar: " .. (RADAR_ENABLED and "ATIVADO" or "DESATIVADO"))
