@@ -84,7 +84,7 @@ local function createDarkHub()
     
     -- Texto do círculo
     local circleText = Instance.new("TextLabel")
-    circleText.Name = "Title"
+    circleText.Name = "DarkHub"
     circleText.Size = UDim2.new(1, 0, 1, 0)
     circleText.BackgroundTransparency = 1
     circleText.Text = HUB_CONFIG.Name
@@ -129,7 +129,7 @@ local function createDarkHub()
     
     -- Título do menu
     local title = Instance.new("TextLabel")
-    title.Name = "Title"
+    title.Name = "DarkHub"
     title.Size = UDim2.new(1, -20, 1, 0)
     title.Position = UDim2.new(0, 10, 0, 0)
     title.BackgroundTransparency = 1
