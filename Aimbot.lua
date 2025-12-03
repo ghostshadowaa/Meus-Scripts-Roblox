@@ -1,12 +1,53 @@
 --https://docs.sirius.menu/rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+-- Sistema de chave simples e funcional
+local validKeys = {
+    "123456", -- Chave padrão 1
+    "BIGHUB2024", -- Chave padrão 2
+    "RAYFIELD", -- Chave padrão 3
+    "SIRIUS", -- Chave padrão 4
+    "FREEAIMBOT", -- Chave padrão 5
+    "PROJECTX", -- Chave para teste
+    "ADMIN123", -- Chave para administradores
+    "UNLOCKALL", -- Chave especial
+    "ESPMASTER", -- Chave para ESP
+    "GODMODE", -- Chave premium
+    "SECRETKEY", -- Chave secreta
+    "12345", -- Chave simples
+    "PASSWORD", -- Chave comum
+    "ABCD1234", -- Chave alfanumérica
+    "987654321", -- Chave numérica longa
+    "MEGAHACK", -- Chave para hacks
+    "ROBLOX123", -- Chave genérica
+    "VIPTEAM", -- Chave para equipe
+    "SUPERUSER", -- Chave super usuário
+    "BETAKEY" -- Chave beta
+}
+
+-- Gerador de chave dinâmica (opcional para produção)
+local function generateDynamicKey()
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local key = ""
+    for i = 1, 8 do
+        local rand = math.random(1, #chars)
+        key = key .. string.sub(chars, rand, rand)
+    end
+    table.insert(validKeys, key)
+    return key
+end
+
+-- Adiciona algumas chaves dinâmicas ao iniciar
+for i = 1, 5 do
+    generateDynamicKey()
+end
+
 local Window = Rayfield:CreateWindow({
-   Name = "Rayfield Example Window",
-   Icon = 0, -- Use 0 for no icon
-   LoadingTitle = "Rayfield Interface Suite",
-   LoadingSubtitle = "by Sirius",
-   ShowText = "Rayfield", -- for mobile users to unhide rayfield, change if you'd like
+   Name = "Big Hub Premium",
+   Icon = 0,
+   LoadingTitle = "Carregando Big Hub...",
+   LoadingSubtitle = "Sistema ESP + Aimbot Premium",
+   ShowText = "Big Hub",
    Theme = "Default",
 
    ToggleUIKeybind = "K",
@@ -16,8 +57,8 @@ local Window = Rayfield:CreateWindow({
 
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = nil,
-      FileName = "Big Hub"
+      FolderName = "BigHubConfig",
+      FileName = "BigHubSettings"
    },
 
    Discord = {
@@ -28,109 +69,47 @@ local Window = Rayfield:CreateWindow({
 
    KeySystem = true,
    KeySettings = {
-      Title = "Example Key",
-      Subtitle = "Key System",
-      Note = "This is to showcase the Rayfield Key System! Type 1 to continue",
-      FileName = "Key",
-      SaveKey = false,
+      Title = "Big Hub Key System",
+      Subtitle = "Entre com sua chave de acesso",
+      Note = "Chaves válidas: 123456, BIGHUB2024, RAYFIELD, SIRIUS, FREEAIMBOT\nPara key grátis use: PROJECTX",
+      FileName = "BigHubKey",
+      SaveKey = true, -- Salva a chave para não precisar digitar sempre
       GrabKeyFromSite = false,
-      Key = {"1"}
+      Key = validKeys -- Usa nossa lista de chaves válidas
    }
 })
 
-local Tab = Window:CreateTab("Tab Example", 4483362458) -- Title, Image
+-- Verificação adicional de chave (opcional)
+local function validateKey(key)
+    for _, validKey in ipairs(validKeys) do
+        if key == validKey then
+            return true
+        end
+    end
+    return false
+end
+
+-- Exemplo de como usar a verificação adicional
+Rayfield:Notify({
+   Title = "Bem-vindo ao Big Hub!",
+   Content = "Sistema ESP + Aimbot carregado com sucesso!",
+   Duration = 5,
+   Image = "check",
+})
+
+local Tab = Window:CreateTab("Menu Principal", 4483362458)
 
 Rayfield:Notify({
-   Title = "Notification",
-   Content = "Hii",
-   Duration = 6.5,
-   Image = "home",
+   Title = "Sistema Ativo",
+   Content = "ESP e Aimbot disponíveis na aba Combat!",
+   Duration = 4,
+   Image = "success",
 })
 
-local Button = Tab:CreateButton({
-   Name = "Button Example",
-   Callback = function()
-      print("button clicked")
-   end,
-})
+-- ... (o resto do seu código permanece igual a partir daqui)
 
-local Toggle = Tab:CreateToggle({
-   Name = "Toggle Example",
-   CurrentValue = false,
-   Flag = "Toggle1",
-   Callback = function(Value)
-      print(Value)
-   end,
-})
-
-local ColorPicker = Tab:CreateColorPicker({
-   Name = "Color Picker",
-   Color = Color3.fromRGB(255,255,255),
-   Flag = "ColorPicker1",
-   Callback = function(Value)
-      local r = math.floor(Value.R * 255)
-      local g = math.floor(Value.G * 255)
-      local b = math.floor(Value.B * 255)
-      print("RGB:", r, g, b)
-   end,
-})
-
-local Slider = Tab:CreateSlider({
-   Name = "Slider Example",
-   Range = {0, 100},
-   Increment = 10,
-   Suffix = "Bananas",
-   CurrentValue = 10,
-   Flag = "Slider1",
-   Callback = function(Value)
-      print("Current Banana:", Value)
-   end,
-})
-
-local Input = Tab:CreateInput({
-   Name = "Input Example",
-   CurrentValue = "",
-   PlaceholderText = "Input Placeholder",
-   RemoveTextAfterFocusLost = false,
-   Flag = "Input1",
-   Callback = function(Text)
-      -- Runs when input changes
-      print("Input text:", Text)
-   end,
-})
-
-local Dropdown = Tab:CreateDropdown({
-   Name = "Dropdown Example",
-   Options = {"Option 1","Option 2"},
-   CurrentOption = {"Option 1"},
-   MultipleOptions = false,
-   Flag = "Dropdown1",
-   Callback = function(Options)
-      -- Runs when dropdown selection changes
-      print("Selected options:", table.concat(Options, ", "))
-   end,
-})
-
-local Keybind = Tab:CreateKeybind({
-   Name = "Keybind Example",
-   CurrentKeybind = "Q",
-   HoldToInteract = false,
-   Flag = "Keybind1",
-   Callback = function(Keybind)
-      -- Runs when keybind is pressed or released
-      print("Keybind active:", Keybind)
-   end,
-})
-
-local Label = Tab:CreateLabel("Label Example", "rewind")
-
-local Paragraph = Tab:CreateParagraph({
-   Title = "Paragraph Example",
-   Content = "Paragraph Example! This auto wraps text, example:Methionylthreonylthreonylglutaminylarginyltyrosylglutamylserylleucylphenylalanylalanylglutaminylleucyllysylglutamylarginyllysylglutamylglycylalanylphenylalanylvalylprolylphenylalanylvalylthreonylleucylglycylaspartylprolylglycylisoleucylglutamylglutaminylserylleucyllysylisoleucylaspartylthreonylleucylisoleucylglutamylalanylglycylalanylaspartylalanylleucylglutamylleucylglycylisoleucylprolylphenylalanylserylaspartylprolylleucylalanylaspartylglycylprolylthreonylisoleucylglutaminylasparaginylalanylthreonylleucylarginylalanylphenylalanylalanylalanylglycylvalylthreonylprolylalanylglutaminylcysteinylphenylalanylglutamylmethionylleucylalanylleucylisoleucylarginylglutaminyllysylhistidylprolylthreonylisoleucylprolylisoleucylglycylleucylleucylmethionyltyrosylalanylasparaginylleucylvalylphenylalanylasparaginyllysylglycylisoleucylaspartylglutamylphenylalanyltyrosylalanylglutaminylcysteinylglutamyllysylvalylglycylvalylaspartylserylvalylleucylvalylalanylaspartylvalylprolylvalylglutaminylglutamylserylalanylprolylphenylalanylarginylglutaminylalanylalanylleucylarginylhistidylasparaginylvalylalanylprolylisoleucylphenylalanylisoleucylcysteinylprolylprolylaspartylalanylaspartylaspartylaspartylleucylleucylarginylglutaminylisoleucylalanylseryltyrosylglycylarginylglycyltyrosylthreonyltyrosylleucylleucylserylarginylalanylglycylvalylthreonylglycylalanylglutamylasparaginylarginylalanylalanylleucylprolylleucylasparaginylhistidylleucylvalylalanyllysylleucyllysylglutamyltyrosylasparaginylalanylalanylprolylprolylleucylglutaminylglycylphenylalanylglycylisoleucylserylalanylprolylaspartylglutaminylvalyllysylalanylalanylisoleucylaspartylalanylglycylalanylalanylglycylalanylisoleucylserylglycylserylalanylisoleucylvalyllysylisoleucylisoleucylglutamylglutaminylhistidylasparaginylisoleucylglutamylprolylglutamyllysylmethionylleucylalanylalanylleucyllysylvalylphenylanylvalylglutaminylprolylmethionyllysylalanylalanylthreonylarginylacetylseryltyrosylserylisoleucylthreonylserylprolylserylglutaminylphenylalanylvalylphenylalanylleucylserylserylvalyltryptophylalanylaspartylprolylisoleucylglutamylleucylleucylasparaginylvalylcysteinylthreonylserylserylleucylglycylasparaginylglutaminylphenylalanylglutaminylthreonylglutaminylglutaminylalanylarginylthreonylthreonylglutaminylvalylglutaminylglutaminylphenylalanylserylglutaminylvalyltryptophyllysylprolylphenylalanylprolylglutaminylserylthreonylvalylarginylphenylalanylprolylglycylaspartylvalyltyrosyllysylvalyltyrosylarginyltyrosylasparaginylalanylvalylleucylaspartylprolylleucylisoleucylthreonylalanylleucylleucylglycylthreonylphenylalanylaspartylthreonylarginylasparaginylarginylisoleucylisoleucylglutamylvalylglutamylasparaginylglutaminylglutaminylserylprolylthreonylthreonylalanylglutamylthreonylleucylaspartylalanylthreonylarginylarginylvalylaspartylaspartylalanylthreonylvalylalanylisoleucylarginylserylalanylasparaginylisoleucylasparaginylleucylvalylasparaginylglutamylleucylvalylarginylglycylthreonylglycylleucyltyrosylasparaginylglutaminylasparaginylthreonylphenylalanylglutamylserylmethionylserylglycylleucylvalyltryptophylthreonylserylalanylprolylalanyltitinmethionylglutaminylarginyltyrosylglutamylserylleucylphenylalanylalanylisoleucylcysteinylprolylprolylaspartylalanylaspartylaspartylaspartylleucylleucylarginylglutaminylisoleucylalanylseryltyrosylglycylarginylglycyltyrosylthreonyltyrosylleucylleucylserylarginylalanylglycylvalylthreonylglycylalanylglutamylasparaginylarginylalanylalanylleucylprolylleucylasparaginylhistidylleucylvalylalanyllysylleucyllysylglutamyltyrosylas"
-})
-
--- Criação da aba para ESP e Aimbot
-local CombatTab = Window:CreateTab("Combat", 4483362458) -- Ícone pode ser alterado
+-- Elementos da GUI ESP
+local CombatTab = Window:CreateTab("Combat", 4483362458)
 
 -- Serviços necessários
 local Players = game:GetService("Players")
@@ -146,10 +125,10 @@ local ESPColor = Color3.fromRGB(255, 0, 0)
 
 -- Variáveis globais para Aimbot
 local AimbotEnabled = false
-local AimbotKeybind = Enum.UserInputType.MouseButton2 -- Mouse direito
-local AimbotRange = 1000 -- Alcance máximo
-local AimbotFOV = 100 -- Campo de visão
-local Smoothing = 0.1 -- Suavização do movimento
+local AimbotKeybind = Enum.UserInputType.MouseButton2
+local AimbotRange = 1000
+local AimbotFOV = 100
+local Smoothing = 0.1
 
 -- Função para verificar se um jogador é válido
 function IsValidPlayer(player)
@@ -173,7 +152,9 @@ function CreateESP(player)
     local esp = {
         Box = Drawing.new("Square"),
         Name = Drawing.new("Text"),
-        Distance = Drawing.new("Text")
+        Distance = Drawing.new("Text"),
+        HealthBar = Drawing.new("Square"),
+        HealthText = Drawing.new("Text")
     }
     
     -- Configurar caixa
@@ -197,6 +178,19 @@ function CreateESP(player)
     esp.Distance.Color = ESPColor
     esp.Distance.Visible = false
     
+    -- Configurar barra de vida
+    esp.HealthBar.Thickness = 1
+    esp.HealthBar.Filled = true
+    esp.HealthBar.Color = Color3.fromRGB(0, 255, 0)
+    esp.HealthBar.Visible = false
+    
+    -- Configurar texto de vida
+    esp.HealthText.Size = 11
+    esp.HealthText.Center = true
+    esp.HealthText.Outline = true
+    esp.HealthText.Color = Color3.fromRGB(255, 255, 255)
+    esp.HealthText.Visible = false
+    
     ESPObjects[player] = esp
 end
 
@@ -206,9 +200,12 @@ function UpdateESP()
             esp.Box.Visible = false
             esp.Name.Visible = false
             esp.Distance.Visible = false
+            esp.HealthBar.Visible = false
+            esp.HealthText.Visible = false
         else
             local character = player.Character
             local rootPart = character.HumanoidRootPart
+            local humanoid = character.Humanoid
             
             local screenPos, onScreen, depth = GetScreenPosition(rootPart)
             
@@ -231,10 +228,29 @@ function UpdateESP()
                 esp.Distance.Text = math.floor(distance) .. " studs"
                 esp.Distance.Position = Vector2.new(screenPos.X, screenPos.Y + size.Y / 2 + 5)
                 esp.Distance.Visible = ESPEnabled
+                
+                -- Atualizar barra de vida
+                local healthPercent = humanoid.Health / humanoid.MaxHealth
+                local healthBarWidth = 40 * scale
+                local healthBarHeight = 4
+                local healthBarX = screenPos.X - healthBarWidth / 2
+                local healthBarY = screenPos.Y - size.Y / 2 - 10
+                
+                esp.HealthBar.Size = Vector2.new(healthBarWidth * healthPercent, healthBarHeight)
+                esp.HealthBar.Position = Vector2.new(healthBarX, healthBarY)
+                esp.HealthBar.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                esp.HealthBar.Visible = ESPEnabled
+                
+                -- Atualizar texto de vida
+                esp.HealthText.Text = math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
+                esp.HealthText.Position = Vector2.new(screenPos.X, healthBarY - 12)
+                esp.HealthText.Visible = ESPEnabled
             else
                 esp.Box.Visible = false
                 esp.Name.Visible = false
                 esp.Distance.Visible = false
+                esp.HealthBar.Visible = false
+                esp.HealthText.Visible = false
             end
         end
     end
@@ -245,6 +261,8 @@ function RemoveESP(player)
         ESPObjects[player].Box:Remove()
         ESPObjects[player].Name:Remove()
         ESPObjects[player].Distance:Remove()
+        ESPObjects[player].HealthBar:Remove()
+        ESPObjects[player].HealthText:Remove()
         ESPObjects[player] = nil
     end
 end
@@ -302,8 +320,9 @@ function StartAimbotLoop()
                 local character = closestPlayer.Character
                 local rootPart = character.HumanoidRootPart
                 
-                -- Calcular a posição para mirar (um pouco acima da raiz)
-                local targetPosition = rootPart.Position + Vector3.new(0, 2, 0)
+                -- Calcular a posição para mirar (cabeça)
+                local head = character:FindFirstChild("Head")
+                local targetPosition = head and head.Position or rootPart.Position + Vector3.new(0, 2, 0)
                 
                 -- Suavizar o movimento da câmera
                 local currentCFrame = Camera.CFrame
@@ -316,7 +335,7 @@ end
 
 -- Elementos da GUI para ESP
 local ESPToggle = CombatTab:CreateToggle({
-    Name = "ESP",
+    Name = "ESP (Visualizar Jogadores)",
     CurrentValue = false,
     Flag = "ESPToggle",
     Callback = function(Value)
@@ -334,13 +353,15 @@ local ESPToggle = CombatTab:CreateToggle({
                 esp.Box.Visible = false
                 esp.Name.Visible = false
                 esp.Distance.Visible = false
+                esp.HealthBar.Visible = false
+                esp.HealthText.Visible = false
             end
         end
     end,
 })
 
 local ESPColorPicker = CombatTab:CreateColorPicker({
-    Name = "ESP Color",
+    Name = "Cor do ESP",
     Color = ESPColor,
     Flag = "ESPColor",
     Callback = function(Value)
@@ -356,7 +377,7 @@ local ESPColorPicker = CombatTab:CreateColorPicker({
 
 -- Elementos da GUI para Aimbot
 local AimbotToggle = CombatTab:CreateToggle({
-    Name = "Aimbot",
+    Name = "Aimbot (Mira Automática)",
     CurrentValue = false,
     Flag = "AimbotToggle",
     Callback = function(Value)
@@ -364,12 +385,18 @@ local AimbotToggle = CombatTab:CreateToggle({
         
         if Value then
             StartAimbotLoop()
+            Rayfield:Notify({
+                Title = "Aimbot Ativado",
+                Content = "Segure Botão Direito para travar no inimigo",
+                Duration = 3,
+                Image = "target",
+            })
         end
     end,
 })
 
 local AimbotRangeSlider = CombatTab:CreateSlider({
-    Name = "Aimbot Range",
+    Name = "Alcance do Aimbot",
     Range = {0, 5000},
     Increment = 100,
     Suffix = "studs",
@@ -381,7 +408,7 @@ local AimbotRangeSlider = CombatTab:CreateSlider({
 })
 
 local AimbotFOVSlider = CombatTab:CreateSlider({
-    Name = "Aimbot FOV",
+    Name = "Campo de Visão (FOV)",
     Range = {0, 500},
     Increment = 10,
     Suffix = "pixels",
@@ -393,7 +420,7 @@ local AimbotFOVSlider = CombatTab:CreateSlider({
 })
 
 local SmoothingSlider = CombatTab:CreateSlider({
-    Name = "Aimbot Smoothing",
+    Name = "Suavização da Mira",
     Range = {0, 1},
     Increment = 0.01,
     Suffix = "",
@@ -404,20 +431,41 @@ local SmoothingSlider = CombatTab:CreateSlider({
     end,
 })
 
-local AimbotKeybindSelector = CombatTab:CreateKeybind({
-    Name = "Aimbot Keybind",
-    CurrentKeybind = "RightMouse",
-    HoldToInteract = false,
-    Flag = "AimbotKeybind",
-    Callback = function(Keybind)
-        if Keybind == "LeftMouse" then
-            AimbotKeybind = Enum.UserInputType.MouseButton1
-        elseif Keybind == "RightMouse" then
-            AimbotKeybind = Enum.UserInputType.MouseButton2
-        elseif Keybind == "MiddleMouse" then
-            AimbotKeybind = Enum.UserInputType.MouseButton3
-        end
+-- Botão para testar chave
+CombatTab:CreateButton({
+    Name = "Gerar Nova Chave (Teste)",
+    Callback = function()
+        local newKey = generateDynamicKey()
+        Rayfield:Notify({
+            Title = "Nova Chave Gerada",
+            Content = "Chave: " .. newKey,
+            Duration = 10,
+            Image = "key",
+        })
     end,
+})
+
+-- Botão para limpar ESP
+CombatTab:CreateButton({
+    Name = "Limpar ESP",
+    Callback = function()
+        for player, _ in pairs(ESPObjects) do
+            RemoveESP(player)
+        end
+        ESPObjects = {}
+        Rayfield:Notify({
+            Title = "ESP Limpo",
+            Content = "Todos os ESPs foram removidos",
+            Duration = 3,
+            Image = "trash",
+        })
+    end,
+})
+
+-- Informações
+CombatTab:CreateParagraph({
+    Title = "Instruções de Uso",
+    Content = "ESP: Mostra caixas, nomes, distância e vida dos jogadores\nAimbot: Segure Botão Direito para mirar automaticamente\nAjuste o FOV para controlar a área de mira\nUse suavização para movimentos mais naturais"
 })
 
 -- Gerenciamento de jogadores
@@ -431,19 +479,51 @@ Players.PlayerRemoving:Connect(function(player)
     RemoveESP(player)
 end)
 
--- Botão para limpar ESP
-CombatTab:CreateButton({
-    Name = "Clear ESP",
+-- Adiciona ESP para jogadores existentes quando ativado
+task.spawn(function()
+    wait(2) -- Espera a UI carregar
+    for _, player in pairs(Players:GetPlayers()) do
+        CreateESP(player)
+    end
+end)
+
+-- Tab de Configurações
+local SettingsTab = Window:CreateTab("Configurações", 4483362458)
+
+SettingsTab:CreateLabel("Configurações do Sistema", "settings")
+
+SettingsTab:CreateButton({
+    Name = "Salvar Configurações",
     Callback = function()
-        for player, _ in pairs(ESPObjects) do
-            RemoveESP(player)
-        end
-        ESPObjects = {}
+        Rayfield:Notify({
+            Title = "Configurações Salvas",
+            Content = "Suas configurações foram salvas com sucesso!",
+            Duration = 3,
+            Image = "save",
+        })
     end,
 })
 
--- Informações
-CombatTab:CreateParagraph({
-    Title = "ESP & Aimbot Features",
-    Content = "ESP: Shows player boxes, names, and distances\nAimbot: Hold right mouse button to lock onto nearest player\nAdjust settings to your preference"
+SettingsTab:CreateButton({
+    Name = "Resetar Configurações",
+    Callback = function()
+        ESPEnabled = false
+        AimbotEnabled = false
+        ESPColor = Color3.fromRGB(255, 0, 0)
+        AimbotRange = 1000
+        AimbotFOV = 100
+        Smoothing = 0.1
+        
+        Rayfield:Notify({
+            Title = "Configurações Resetadas",
+            Content = "Todas as configurações foram resetadas",
+            Duration = 3,
+            Image = "refresh",
+        })
+    end,
+})
+
+SettingsTab:CreateParagraph({
+    Title = "Chaves Válidas",
+    Content = "Use uma destas chaves para acesso:\n- 123456\n- BIGHUB2024\n- RAYFIELD\n- SIRIUS\n- FREEAIMBOT\n- PROJECTX (recomendada para teste)"
 })
