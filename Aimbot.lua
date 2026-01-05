@@ -1,7 +1,3 @@
--- Configurações Iniciais
--- O seu link original continua sendo carregado aqui
-loadstring(game:HttpGet("https://raw.githubusercontent.com/kaynan9000/Script/refs/heads/main/Teste.lua"))()
-
 
 -- Propriedades da UI (Simples e funcional)
 ScreenGui.Parent = game.CoreGui
