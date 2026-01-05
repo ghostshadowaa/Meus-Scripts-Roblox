@@ -10,13 +10,13 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- ** 1. PREVENÇÃO DE EXECUÇÃO DUPLA (ESSENCIAL) **
+-- ** 1. GARANTIA DE INSTÂNCIA ÚNICA **
 if _g.ScriptJaCarregado then 
     warn("Script já está rodando! Execução ignorada.")
     return 
 end
 _g.ScriptJaCarregado = true
-print("[Script] Instância única garantida. Iniciando carregamento e UI...")
+print("[Script] Instância única garantida. Iniciando carregamento e UI estável...")
 
 -- ** 2. CARREGAMENTO DO SCRIPT EXTERNO **
 local function _exec(_target_url)
@@ -35,10 +35,9 @@ local ESPConnection = nil
 
 -- ** 4. LÓGICA DE FUNÇÕES (Cheats) **
 
--- Função de Aimbot (Baseada na sua lógica original)
+-- Função de Aimbot
 local function ToggleAimbot()
     if Aimbot_Ativo then
-        -- DESATIVAÇÃO
         if AimbotConnection then
             AimbotConnection:Disconnect()
             AimbotConnection = nil
@@ -46,7 +45,6 @@ local function ToggleAimbot()
         Aimbot_Ativo = false
         print("Aimbot DESATIVADO")
     else
-        -- ATIVAÇÃO
         if not LocalPlayer or not workspace.CurrentCamera then return end
         
         local Camera = workspace.CurrentCamera
@@ -76,14 +74,13 @@ local function ToggleAimbot()
             
             if closestPlayer and closestPlayer.Character:FindFirstChild("Head") then
                 local head = closestPlayer.Character.Head
-                -- Aplica mira suave
                 Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, head.Position), 0.5)
             end
         end)
         Aimbot_Ativo = true
         print("Aimbot ATIVADO")
     end
-    -- Atualiza o texto do botão
+    -- Atualiza o texto e a cor do botão
     AimbotBtn.Text = (Aimbot_Ativo and "🎯 Aimbot: LIGADO" or "🎯 Aimbot: DESLIGADO")
     AimbotBtn.BackgroundColor3 = (Aimbot_Ativo and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(231, 76, 60))
 end
@@ -117,7 +114,6 @@ local function ToggleESP()
                         h.FillTransparency = 0.5
                         h.FillColor = Color3.fromRGB(255, 0, 0)
                     end
-                -- Limpeza de Highlights se o player morrer/mudar
                 elseif player.Character and player.Character:FindFirstChildOfClass("Highlight") then
                      player.Character:FindFirstChildOfClass("Highlight"):Destroy()
                 end
@@ -126,14 +122,14 @@ local function ToggleESP()
         ESP_Ativo = true
         print("ESP ATIVADO")
     end
-    -- Atualiza o texto do botão
+    -- Atualiza o texto e a cor do botão
     ESPBtn.Text = (ESP_Ativo and "👁️ ESP: LIGADO" or "👁️ ESP: DESLIGADO")
     ESPBtn.BackgroundColor3 = (ESP_Ativo and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(231, 76, 60))
 end
 
--- ** 5. RECRIAÇÃO DA INTERFACE GRÁFICA (UI) **
+-- ** 5. CRIAÇÃO DA INTERFACE GRÁFICA ESTÁVEL **
 
--- Limpa qualquer painel antigo que possa ter sido criado
+-- GARANTIA CONTRA CLONES DE UI: Destrói qualquer painel antigo ANTES de criar o novo.
 if game.CoreGui:FindFirstChild("PainelDeFuncoes") then
     game.CoreGui.PainelDeFuncoes:Destroy()
 end
@@ -141,7 +137,7 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
-local CloseBtn = Instance.new("TextButton") -- Novo: Botão de fechar (X)
+local CloseBtn = Instance.new("TextButton")
 local ESPBtn = Instance.new("TextButton")
 local AimbotBtn = Instance.new("TextButton")
 
@@ -154,18 +150,17 @@ MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.Position = UDim2.new(0.5, -100, 0.5, -75)
 MainFrame.Size = UDim2.new(0, 200, 0, 150)
-MainFrame.Active = true
--- >>> CORREÇÃO CRÍTICA: Removendo o Draggable do Roblox para evitar rastros
--- MainFrame.Draggable = true 
-MainFrame.Visible = false -- Começa oculto!
+MainFrame.Active = true -- Permite capturar eventos de input
+-- REMOVIDO: MainFrame.Draggable = true (para evitar o bug de rastros)
+MainFrame.Visible = false 
 
 -- Título (Área para arrastar)
 Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "Menu de Auxílio [INSERT]"
+Title.Text = "Menu de Auxílio [F8]" -- Alterado para F8, mais comum que Insert
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-Title.Active = true -- Essencial para capturar cliques e inputs
+Title.Active = true -- Essencial para o arrastar manual
 
 -- Botão de Fechar (X)
 CloseBtn.Parent = Title
@@ -177,7 +172,6 @@ CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
 end)
-
 
 -- Função auxiliar para criar botões com estilo
 local function CriarBotao(btn, texto, pos, cor)
@@ -201,46 +195,48 @@ AimbotBtn.MouseButton1Click:Connect(ToggleAimbot)
 
 -- ** 6. LÓGICA DE ABRIR E FECHAR O PAINEL (TOGGLE) **
 
+-- Usa F8 (uma tecla mais fácil de usar que o Insert em muitos teclados)
 UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Insert and not UserInputService:GetFocusedTextBox() then
+    if input.KeyCode == Enum.KeyCode.F8 and not UserInputService:GetFocusedTextBox() then
         MainFrame.Visible = not MainFrame.Visible
-        print("Painel Toggle: " .. (MainFrame.Visible and "ABERTO" or "FECHADO"))
+        print("Painel Toggle (F8): " .. (MainFrame.Visible and "ABERTO" or "FECHADO"))
     end
 end)
 
-
--- ** 7. LÓGICA DE ARRASTAR MANUAL (SEM RASTROS) **
+-- ** 7. LÓGICA DE ARRASTAR MANUAL SIMPLIFICADA (MÁXIMA COMPATIBILIDADE) **
 
 local dragging = false
-local dragStart = Vector2.new(0, 0)
-local startPos = UDim2.new(0, 0, 0, 0)
+local dragStart
+local startPos
 
--- Inicia o arrastar quando o clique/toque começa no Título
+-- Inicia o arrastar
 Title.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = MainFrame.Position
-        -- Evita que o clique seja propagado para outros elementos
-        UserInputService:SetMouseBehavior(Enum.MouseBehavior.LockCenter) 
+        startPos = MainFrame.AbsolutePosition
+        
+        -- Garante que o painel receba todos os inputs enquanto arrasta
+        Title:CaptureFocus() 
     end
 end)
 
--- Atualiza a posição a cada movimento do mouse/toque
+-- Atualiza a posição a cada movimento
 UserInputService.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
+        local newX = startPos.X + delta.X
+        local newY = startPos.Y + delta.Y
+        
+        -- Move o painel usando UDim2.new(0, offset, 0, offset) para máxima estabilidade
+        MainFrame.Position = UDim2.new(0, newX, 0, newY)
     end
 end)
 
--- Para o arrastar quando o clique/toque termina
+-- Para o arrastar
 Title.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
-        UserInputService:SetMouseBehavior(Enum.MouseBehavior.Default)
+        Title:ReleaseFocus()
     end
 end)
