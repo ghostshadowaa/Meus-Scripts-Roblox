@@ -5,7 +5,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VIM = game:GetService("VirtualInputManager")
+-- local VIM = game:GetService("VirtualInputManager") -- Removido (Não é necessário para Fly/Aimbot)
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -17,17 +17,13 @@ local Config = {
     CircleVisible = false,
     -- Visuais
     ESP = false,
-    -- Auto Clicker
-    Clicking = false,
-    ClickCount = 0,
-    ClickDelay = 0.01 -- NOVO: Delay inicial (0.01s = 100 CPS teórico)
+    -- Fly
+    Flying = false, -- Controle de estado do Fly
+    FlySpeed = 5   -- Velocidade de voo (studs/frame)
 }
 
--- [[ VARIÁVEIS DE CONTROLE DE TEMPO/CPS ]]
-local lastUpdateTime = tick()
-local lastClickCount = 0
-local clickerThread = nil -- NOVO: Variável para a thread do loop do Clicker
-local cpsDisplayConn = nil -- Conexão para atualizar o CPS na UI
+-- [[ VARIÁVEIS DE CONTROLE ]]
+local FlyBindName = "FlyMovement" -- Nome da Bind para o RenderStep do Fly
 
 -- [[ CÍRCULO DE FOV ]]
 local FOVCircle = Drawing.new("Circle")
@@ -37,6 +33,21 @@ FOVCircle.Transparency = 0.5
 FOVCircle.Filled = false
 FOVCircle.Visible = false
 FOVCircle.Radius = Config.FOV
+
+-- [[ JANELA PRINCIPAL RAYFIELD ]]
+local Window = Rayfield:CreateWindow({
+   Name = "KA Hub | Premium Edition",
+   LoadingTitle = "Carregando Ferramentas...",
+   LoadingSubtitle = "by Sirius & KA",
+   ConfigurationSaving = { Enabled = true, FolderName = "KA_Hub_Config", FileName = "Config" },
+   KeySystem = true, 
+   KeySettings = {
+      Title = "Sistema de Chave",
+      Subtitle = "Acesse o Hub",
+      Note = "A chave é: hub",
+      Key = {"hub"} 
+   }
+})
 
 ---
 --- LÓGICA DE SUPORTE (FUNÇÕES)
@@ -62,71 +73,15 @@ local function GetClosestPlayer()
     return target
 end
 
--- Função central do clique (agora usando task.wait)
-local function doClickLoop()
-    while Config.Clicking do
-        local mousePos = UserInputService:GetMouseLocation()
-        local x = mousePos.X + math.random(-1, 1)
-        local y = mousePos.Y + math.random(-1, 1)
-
-        VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-        VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-        
-        Config.ClickCount = Config.ClickCount + 1
-        
-        -- Espera baseada no delay manual configurado
-        task.wait(Config.ClickDelay)
-    end
-end
-
--- Função para atualizar o Display de CPS (chamada pelo RenderStepped)
-local function updateCPSDisplay(CPSLabel, TotalClicksLabel)
-    if tick() - lastUpdateTime >= 1 then
-        local cps = Config.ClickCount - lastClickCount
-        CPSLabel:Set("CPS Atual: " .. cps)
-        lastClickCount = Config.ClickCount
-        lastUpdateTime = tick()
-    end
-    TotalClicksLabel:Set("Total de Cliques: " .. Config.ClickCount)
-end
-
--- [[ JANELA PRINCIPAL RAYFIELD ]]
-local Window = Rayfield:CreateWindow({
-   Name = "KA Hub | Premium Edition",
-   LoadingTitle = "Carregando Multi-Ferramentas...",
-   LoadingSubtitle = "by Sirius & KA",
-   ConfigurationSaving = { Enabled = true, FolderName = "KA_Hub_Config", FileName = "Config" },
-   KeySystem = true, 
-   KeySettings = {
-      Title = "Sistema de Chave",
-      Subtitle = "Acesse o Hub",
-      Note = "A chave é: hub",
-      Key = {"hub"} 
-   }
-})
--- [[ CONFIGURAÇÃO DO FLY SCRIPT ]]
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-
--- [[ VARIÁVEIS DE CONTROLE ]]
-local Config = {
-    FlySpeed = 5, -- Velocidade de voo em studs/frame (ajuste conforme necessário)
-    Flying = false
-}
-
--- [[ FUNÇÃO DE VOAR ]]
+-- [[ FUNÇÃO DE VOAR (Fly Handler) ]]
 local function HandleFly(dt)
-    -- O 'dt' (delta time) garante que o movimento seja suave e independente do FPS.
-    
     if not Config.Flying then
         return
     end
 
     local FlyVector = Vector3.new(0, 0, 0)
-    local Speed = Config.FlySpeed * dt * 60 -- Multiplica por 60 para normalizar pela taxa de quadros (idealmente 60 FPS)
+    -- dt * 60 é uma normalização para manter a velocidade constante, independente do FPS.
+    local Speed = Config.FlySpeed * dt * 60 
 
     -- Detecta entradas do usuário:
     
@@ -151,112 +106,64 @@ local function HandleFly(dt)
         FlyVector = FlyVector - Vector3.new(0, 1, 0)
     end
 
-    -- Se houver movimento, aplica a CFrame à câmera
+    -- Aplica a CFrame à câmera
     if FlyVector.Magnitude > 0 then
-        -- Normaliza para que o movimento diagonal não seja mais rápido
-        FlyVector = FlyVector.Unit * Speed
-        
+        FlyVector = FlyVector.Unit * Speed -- Normaliza e aplica velocidade
         Camera.CFrame = Camera.CFrame + FlyVector
     end
 end
 
--- [[ LÓGICA DE ATIVAÇÃO/DESATIVAÇÃO ]]
-local function ToggleFly()
-    Config.Flying = not Config.Flying
+-- [[ LÓGICA DE ATIVAÇÃO/DESATIVAÇÃO DO FLY (Integração Rayfield) ]]
+local function ToggleFly(Enabled)
+    Config.Flying = Enabled
     
-    if Config.Flying then
-        print("Fly Ativado! Use W/A/S/D para mover, Espaço/Shift para subir/descer.")
+    if Enabled then
+        print("Fly Ativado!")
         
-        -- Desativa o Character e a Gravity para evitar interferência
+        -- Desativa o Character (crucial para o Fly)
         if LocalPlayer.Character then
-            LocalPlayer.Character.Archivable = false
-            LocalPlayer.Character:Destroy()
+            -- Para evitar bugs com LoadCharacter, tentamos apenas tirar a CFrame
+            LocalPlayer.Character.Parent = nil 
         end
+        
         Camera.CameraType = Enum.CameraType.Scriptable
         
-        -- Conecta o loop de voo ao RenderStepped (para movimento suave)
-        RunService:BindToRenderStep("FlyMovement", Enum.RenderPriority.Camera.Value, HandleFly)
+        -- Conecta o loop de voo ao RenderStepped
+        RunService:BindToRenderStep(FlyBindName, Enum.RenderPriority.Camera.Value, HandleFly)
         
     else
         print("Fly Desativado. Carregando personagem.")
         
-        -- Reconecta o loop de voo
-        RunService:UnbindFromRenderStep("FlyMovement")
+        -- Desconecta o loop de voo
+        RunService:UnbindFromRenderStep(FlyBindName)
         
         -- Restaura o Character e a Camera
         Camera.CameraType = Enum.CameraType.Custom
+        -- Recarrega o Character para colocá-lo no lugar onde a câmera estava
         LocalPlayer:LoadCharacter()
     end
 end
 
--- [[ INTERFACE SIMPLES DE ATIVAÇÃO (Tecla E) ]]
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    -- Ativa/Desativa ao pressionar a tecla 'E'
-    if input.KeyCode == Enum.KeyCode.E and not gameProcessed then
-        ToggleFly()
-    end
-end)
-
-print("Fly Script Carregado. Pressione E para Ativar/Desativar.")
-
 ---
---- SEÇÃO: AUTO CLICKER (COM CONTROLE MANUAL)
+--- SEÇÃO: MOVIMENTO (FLY)
 ---
-local ClickerTab = Window:CreateTab("Auto Clicker", 4483362458)
+local MovementTab = Window:CreateTab("Movimento", 4483362458) -- Ícone de alvo (Pode ser mudado)
 
-local CPSLabel = ClickerTab:CreateLabel("CPS Atual: 0")
-local TotalClicksLabel = ClickerTab:CreateLabel("Total de Cliques: 0")
-
--- NOVO SLIDER DE VELOCIDADE
-ClickerTab:CreateSlider({
-   Name = "Delay (0.01s = 100 CPS)",
-   Range = {0.005, 0.5}, -- 0.005s (200 CPS) a 0.5s (2 CPS)
-   Increment = 0.005,
-   Suffix = "s",
-   CurrentValue = Config.ClickDelay,
-   Callback = function(Value)
-      Config.ClickDelay = Value
-   end,
+MovementTab:CreateToggle({
+    Name = "Ativar Fly (W/A/S/D)",
+    CurrentValue = Config.Flying,
+    Callback = ToggleFly, -- Chama a função de toggle
 })
 
-ClickerTab:CreateToggle({
-   Name = "Ativar Auto Clicker",
-   CurrentValue = Config.Clicking,
-   Callback = function(Value)
-      Config.Clicking = Value
-      
-      if Value then
-          -- Inicia a thread do loop de clique
-          clickerThread = coroutine.wrap(doClickLoop)()
-          
-          -- Inicia a atualização do display de CPS/Contador
-          cpsDisplayConn = RunService.RenderStepped:Connect(function()
-              updateCPSDisplay(CPSLabel, TotalClicksLabel)
-          end)
-          
-      else
-          -- Desconecta o display de CPS
-          if cpsDisplayConn then 
-              cpsDisplayConn:Disconnect()
-              cpsDisplayConn = nil
-          end
-          
-          -- A thread de clique para automaticamente quando Config.Clicking = false
-          
-          -- Garante que o display seja atualizado pela última vez ao parar
-          updateCPSDisplay(CPSLabel, TotalClicksLabel)
-      end
-   end,
-})
-
-ClickerTab:CreateButton({
-   Name = "Resetar Contador",
-   Callback = function()
-       Config.ClickCount = 0
-       lastClickCount = 0
-       TotalClicksLabel:Set("Total de Cliques: 0")
-       CPSLabel:Set("CPS Atual: 0")
-   end,
+MovementTab:CreateSlider({
+    Name = "Velocidade do Fly",
+    Range = {1, 50},
+    Increment = 1,
+    Suffix = "x",
+    CurrentValue = Config.FlySpeed,
+    Callback = function(Value)
+        Config.FlySpeed = Value
+    end,
 })
 
 ---
@@ -315,7 +222,6 @@ VisualTab:CreateToggle({
 --- LOOP PRINCIPAL (RENDERSTEPPED - LÓGICA)
 ---
 
--- Conexão principal para Aimbot, ESP e FOV.
 RunService.RenderStepped:Connect(function()
     -- Update FOV Circle
     FOVCircle.Position = UserInputService:GetMouseLocation()
@@ -347,7 +253,7 @@ end)
 
 Rayfield:Notify({
    Title = "KA Hub Unificado",
-   Content = "Auto Clicker e Aimbot carregados!",
+   Content = "Fly e Aimbot carregados!",
    Duration = 5,
    Image = 4483362458,
 })
