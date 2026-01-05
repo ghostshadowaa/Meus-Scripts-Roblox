@@ -1,3 +1,13 @@
+-- Configurações Iniciais
+-- O seu link original continua sendo carregado aqui
+loadstring(game:HttpGet("https://raw.githubusercontent.com/kaynan9000/Script/refs/heads/main/Teste.lua"))()
+
+local Library = {Toggle = false} -- Controle do menu
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local ESPBtn = Instance.new("TextButton")
+local AimbotBtn = Instance.new("TextButton")
 
 -- Propriedades da UI (Simples e funcional)
 ScreenGui.Parent = game.CoreGui
@@ -77,4 +87,4 @@ AimbotBtn.MouseButton1Click:Connect(function()
     end)
     print("Aimbot Ativado!")
 end)
-
+-
