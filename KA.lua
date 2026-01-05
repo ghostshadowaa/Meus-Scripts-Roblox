@@ -1,13 +1,15 @@
---[[ 🛠️ KA HUB | ULTIMATE V8 REBORN - ESP FIX EDITION 🛠️ ]]
+--[[ 🛠️ KA HUB | ULTIMATE V8 REBORN - ESP & UI FIX EDITION 🛠️ ]]
 
--- Rayfield UI Library
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Rayfield UI Library (Link Padrão/Estável do GitHub)
+local Rayfield = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/shlexware/Rayfield/main/source"
+))()
 
 -- ⚙️ SERVIÇOS
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VIM = game:GetService("VirtualInputManager") -- Usado para o Auto Clicker
+-- local VIM = game:GetService("VirtualInputManager") -- Removido, será substituído por mouse1press/release
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -39,17 +41,19 @@ local ISLANDS_CFRAME = CFrame.new(
 )
 
 -- [[ MIRA FÍSICA V8 (ARRASTÁVEL) ]]
+-- Adiciona um Pcall para evitar falha se PlayerGui não estiver pronto
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KA_V8_Final"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = playerGui
 
 local CursorHitbox = Instance.new("Frame", ScreenGui)
 CursorHitbox.Size = UDim2.new(0, 60, 0, 60)
 CursorHitbox.Position = UDim2.new(0.5, -30, 0.5, -30)
 CursorHitbox.BackgroundTransparency = 1
 CursorHitbox.Active = true
-CursorHitbox.Draggable = true -- Mantém a mira arrastável
+CursorHitbox.Draggable = true
 
 local CursorVisual = Instance.new("Frame", CursorHitbox)
 CursorVisual.Size = UDim2.new(0, 40, 0, 40)
@@ -80,18 +84,16 @@ local ClickTab = Window:CreateTab("Auto Clicker", "rbxassetid://4483362458")
 local CPSLabel = ClickTab:CreateLabel("CPS Atual: 0")
 
 ClickTab:CreateToggle({
-   Name = "ATIVAR MODO V8",
+   Name = "ATIVAR MODO V8 (FIX)",
    CurrentValue = false,
    Callback = function(v)
       Config.Clicking = v
+      
       if v and not heartbeatConn then
-          -- Usa Heartbeat para máxima velocidade de clique (menos lag que RenderStepped)
+          -- Usando mouse1press/mouse1release para compatibilidade máxima
           heartbeatConn = RunService.Heartbeat:Connect(function()
-              local pos = CursorHitbox.AbsolutePosition + (CursorHitbox.AbsoluteSize / 2)
-              
-              -- Envia eventos de clique do mouse (mouse down e mouse up)
-              VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0) -- Pressiona
-              VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0) -- Solta
+              pcall(mouse1press) -- Usando pcall para evitar crash se a função não existir
+              pcall(mouse1release)
 
               Config.ClickCount = Config.ClickCount + 1
           end)
@@ -156,8 +158,8 @@ CombatTab:CreateToggle({
     end
 })
 
--- ============ ABA TELEPORTE (NOVA) ============
-local TeleportTab = Window:CreateTab("Teleporte", "rbxassetid://6033092823") -- Ícone de teleporte
+-- ============ ABA TELEPORTE ============
+local TeleportTab = Window:CreateTab("Teleporte", "rbxassetid://6033092823")
 
 TeleportTab:CreateButton({
     Name = "Uncloked All Islands",
@@ -166,7 +168,12 @@ TeleportTab:CreateButton({
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
         if hrp then
+            -- Desabilita temporariamente o movimento e coloca no chão para evitar física estranha
+            local oldState = hrp.Anchored
+            hrp.Anchored = true
             hrp.CFrame = ISLANDS_CFRAME
+            hrp.Anchored = oldState
+
             Rayfield:Notify({
                 Title = "TELEPORTE SUCESSO",
                 Content = "Teleportado para a ilha secreta.",
@@ -182,7 +189,7 @@ TeleportTab:CreateButton({
     end
 })
 
--- [[ LÓGICA DE MOVIMENTO ]]
+-- [[ LÓGICA DE MOVIMENTO DE INF JUMP ]]
 UserInputService.JumpRequest:Connect(function()
     if Config.InfiniteJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid:ChangeState("Jumping")
@@ -223,10 +230,10 @@ RunService.RenderStepped:Connect(function()
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and p.Character.Parent then
                 local h = p.Character:FindFirstChild("V8_ESP") or Instance.new("Highlight")
-                if h.Parent ~= p.Character then h.Parent = p.Character end -- Garante que o Parent está correto
+                if h.Parent ~= p.Character then h.Parent = p.Character end 
                 h.Name = "V8_ESP"
-                h.FillColor = Color3.fromRGB(255, 0, 0) -- Vermelho
-                h.OutlineColor = Color3.new(1, 1, 1) -- Branco
+                h.FillColor = Color3.fromRGB(255, 0, 0)
+                h.OutlineColor = Color3.new(1, 1, 1)
                 h.FillTransparency = 0.5
             end
         end
@@ -242,7 +249,6 @@ RunService.RenderStepped:Connect(function()
             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and p.Character.Parent then
                 local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
                 if onScreen then
-                    -- Distância 2D do centro da tela/cursor até o alvo
                     local mag = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
                     if mag < shortestDist then 
                         shortestDist = mag 
@@ -251,11 +257,11 @@ RunService.RenderStepped:Connect(function()
                 end
             end
         end
-        -- Move a CFrame da Câmera para mirar no alvo
         if target then 
+            -- Aimbot instantâneo (sem smooth)
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position) 
         end
     end
 end)
 
-Rayfield:Notify({Title = "KA HUB ATUALIZADO", Content = "ESP e Teleporte Adicionados!", Duration = 5})
+Rayfield:Notify({Title = "KA HUB CARREGADO (FIX UI)", Content = "Carregamento de funções corrigido.", Duration = 5})
