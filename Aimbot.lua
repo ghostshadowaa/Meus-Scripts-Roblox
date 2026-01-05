@@ -104,6 +104,100 @@ local Window = Rayfield:CreateWindow({
       Key = {"hub"} 
    }
 })
+-- [[ CONFIGURAÇÃO DO FLY SCRIPT ]]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- [[ VARIÁVEIS DE CONTROLE ]]
+local Config = {
+    FlySpeed = 5, -- Velocidade de voo em studs/frame (ajuste conforme necessário)
+    Flying = false
+}
+
+-- [[ FUNÇÃO DE VOAR ]]
+local function HandleFly(dt)
+    -- O 'dt' (delta time) garante que o movimento seja suave e independente do FPS.
+    
+    if not Config.Flying then
+        return
+    end
+
+    local FlyVector = Vector3.new(0, 0, 0)
+    local Speed = Config.FlySpeed * dt * 60 -- Multiplica por 60 para normalizar pela taxa de quadros (idealmente 60 FPS)
+
+    -- Detecta entradas do usuário:
+    
+    -- Frente (W) e Trás (S)
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+        FlyVector = FlyVector + Camera.CFrame.lookVector
+    elseif UserInputService:IsKeyDown(Enum.KeyCode.S) then
+        FlyVector = FlyVector - Camera.CFrame.lookVector
+    end
+
+    -- Direita (D) e Esquerda (A)
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+        FlyVector = FlyVector + Camera.CFrame.rightVector
+    elseif UserInputService:IsKeyDown(Enum.KeyCode.A) then
+        FlyVector = FlyVector - Camera.CFrame.rightVector
+    end
+
+    -- Cima (Space/Espaço) e Baixo (Shift Esquerdo)
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+        FlyVector = FlyVector + Vector3.new(0, 1, 0)
+    elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+        FlyVector = FlyVector - Vector3.new(0, 1, 0)
+    end
+
+    -- Se houver movimento, aplica a CFrame à câmera
+    if FlyVector.Magnitude > 0 then
+        -- Normaliza para que o movimento diagonal não seja mais rápido
+        FlyVector = FlyVector.Unit * Speed
+        
+        Camera.CFrame = Camera.CFrame + FlyVector
+    end
+end
+
+-- [[ LÓGICA DE ATIVAÇÃO/DESATIVAÇÃO ]]
+local function ToggleFly()
+    Config.Flying = not Config.Flying
+    
+    if Config.Flying then
+        print("Fly Ativado! Use W/A/S/D para mover, Espaço/Shift para subir/descer.")
+        
+        -- Desativa o Character e a Gravity para evitar interferência
+        if LocalPlayer.Character then
+            LocalPlayer.Character.Archivable = false
+            LocalPlayer.Character:Destroy()
+        end
+        Camera.CameraType = Enum.CameraType.Scriptable
+        
+        -- Conecta o loop de voo ao RenderStepped (para movimento suave)
+        RunService:BindToRenderStep("FlyMovement", Enum.RenderPriority.Camera.Value, HandleFly)
+        
+    else
+        print("Fly Desativado. Carregando personagem.")
+        
+        -- Reconecta o loop de voo
+        RunService:UnbindFromRenderStep("FlyMovement")
+        
+        -- Restaura o Character e a Camera
+        Camera.CameraType = Enum.CameraType.Custom
+        LocalPlayer:LoadCharacter()
+    end
+end
+
+-- [[ INTERFACE SIMPLES DE ATIVAÇÃO (Tecla E) ]]
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    -- Ativa/Desativa ao pressionar a tecla 'E'
+    if input.KeyCode == Enum.KeyCode.E and not gameProcessed then
+        ToggleFly()
+    end
+end)
+
+print("Fly Script Carregado. Pressione E para Ativar/Desativar.")
 
 ---
 --- SEÇÃO: AUTO CLICKER (COM CONTROLE MANUAL)
