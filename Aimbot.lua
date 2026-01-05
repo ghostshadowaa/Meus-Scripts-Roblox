@@ -28,15 +28,7 @@ local Window = Rayfield:CreateWindow({
       Key = {"hub"} 
    }
 })
-
--- Notificação de Sucesso
-Rayfield:Notify({
-   Title = "Sucesso!",
-   Content = "O script foi carregado com sucesso.",
-   Duration = 5,
-   Image = 4483362458,
-})
- --[[
+[[
   BOTÃO DE VOO (FLY MODE) EM LUA
   
   Este código define a lógica por trás do modo de voo e o botão 
@@ -134,3 +126,10 @@ toggle_fly_mode()
 
 print("\n--- Simulação de outro clique: Desligar Voo ---")
 toggle_fly_mode() 
+-- Notificação de Sucesso
+Rayfield:Notify({
+   Title = "Sucesso!",
+   Content = "O script foi carregado com sucesso.",
+   Duration = 5,
+   Image = 4483362458,
+})
