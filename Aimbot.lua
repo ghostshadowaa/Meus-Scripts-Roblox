@@ -1,4 +1,4 @@
--- [[ CONFIGURAÇÕES E VARIÁVEIS DE CONTROLE ]]
+
 local _g = getgenv and getgenv() or _G
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
