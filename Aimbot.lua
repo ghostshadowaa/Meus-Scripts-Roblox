@@ -1,23 +1,31 @@
--- [[ KA HUB | ULTIMATE BUNDLE (FIXED) ]]
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- [[ KA HUB | ULTIMATE BUNDLE | DELTA FIXED ]]
 
+-- Rayfield (link estável)
+local Rayfield = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/shlexware/Rayfield/main/source"
+))()
+
+-- Serviços
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VIM = game:GetService("VirtualInputManager")
+local GuiService = game:GetService("GuiService")
+
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
+-- Config
 local Config = {
     Aimbot = false,
     FOV = 150,
     ESP = false,
     Clicking = false,
     ClickDelay = 0.05,
-    MiraVisivel = true
+    MiraVisivel = true,
+    AimSmooth = 0.15
 }
 
--- [[ MIRA ]]
+-- ================= MIRA =================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "KA_Crosshair"
 ScreenGui.ResetOnSpawn = false
@@ -42,14 +50,15 @@ l2.Position = UDim2.new(0, 0, 0.5, -1)
 l2.BackgroundColor3 = Color3.new(1, 0, 0)
 l2.BorderSizePixel = 0
 
--- [[ FOV ]]
+-- ================= FOV =================
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 1
 FOVCircle.Color = Color3.new(1, 1, 1)
 FOVCircle.Transparency = 0.7
 FOVCircle.Filled = false
+FOVCircle.Visible = false
 
--- [[ UI ]]
+-- ================= UI =================
 local Window = Rayfield:CreateWindow({
     Name = "KA Hub | Premium Edition",
     LoadingTitle = "Injetando Sistema...",
@@ -57,12 +66,15 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = { Enabled = false }
 })
 
--- COMBATE
+-- ============ COMBATE ============
 local CombatTab = Window:CreateTab("Combate", 4483362458)
 
 CombatTab:CreateToggle({
     Name = "Ativar Aimbot",
-    Callback = function(v) Config.Aimbot = v end
+    Callback = function(v)
+        Config.Aimbot = v
+        FOVCircle.Visible = v
+    end
 })
 
 CombatTab:CreateToggle({
@@ -87,7 +99,7 @@ CombatTab:CreateSlider({
     Callback = function(v) Config.FOV = v end
 })
 
--- AUTO CLICKER
+-- ============ AUTO CLICKER ============
 local ClickTab = Window:CreateTab("Auto Clicker", 4483362458)
 
 local CPSLabel = ClickTab:CreateLabel("CPS Atual: 0")
@@ -103,9 +115,10 @@ ClickTab:CreateToggle({
         if v and not clickThread then
             clickThread = task.spawn(function()
                 while Config.Clicking do
-                    local pos = UserInputService:GetMouseLocation()
-                    VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
-                    VIM:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
+                    mouse1press()
+                    task.wait(0.01)
+                    mouse1release()
+
                     cCount += 1
                     task.wait(Config.ClickDelay)
                 end
@@ -113,6 +126,7 @@ ClickTab:CreateToggle({
         end
 
         if not v then
+            Config.Clicking = false
             clickThread = nil
         end
     end
@@ -129,10 +143,13 @@ ClickTab:CreateSlider({
 ClickTab:CreateToggle({
     Name = "Mostrar Mira",
     CurrentValue = true,
-    Callback = function(v) Mira.Visible = v end
+    Callback = function(v)
+        Config.MiraVisivel = v
+        Mira.Visible = v
+    end
 })
 
--- [[ CORE ]]
+-- ================= CORE =================
 local function GetTarget()
     local target, shortest = nil, Config.FOV
     local mousePos = UserInputService:GetMouseLocation()
@@ -154,32 +171,39 @@ end
 
 RunService.RenderStepped:Connect(function()
     local mousePos = UserInputService:GetMouseLocation()
+    local inset = GuiService:GetGuiInset()
 
-    Mira.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
+    Mira.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y - inset.Y)
+
     FOVCircle.Position = mousePos
     FOVCircle.Radius = Config.FOV
-    FOVCircle.Visible = Config.Aimbot
 
+    -- Aimbot suave
     if Config.Aimbot then
         local t = GetTarget()
-        if t then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, t.Character.Head.Position)
+        if t and t.Character and t.Character:FindFirstChild("Head") then
+            local goal = CFrame.new(Camera.CFrame.Position, t.Character.Head.Position)
+            Camera.CFrame = Camera.CFrame:Lerp(goal, Config.AimSmooth)
         end
     end
 
+    -- ESP (sem lag)
     if Config.ESP then
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
-                local h = p.Character:FindFirstChild("KA_ESP") or Instance.new("Highlight")
-                h.Name = "KA_ESP"
-                h.Parent = p.Character
-                h.FillColor = Color3.new(1, 0, 0)
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.FillTransparency = 0.5
+                if not p.Character:FindFirstChild("KA_ESP") then
+                    local h = Instance.new("Highlight")
+                    h.Name = "KA_ESP"
+                    h.Parent = p.Character
+                    h.FillColor = Color3.new(1, 0, 0)
+                    h.OutlineColor = Color3.new(1, 1, 1)
+                    h.FillTransparency = 0.5
+                end
             end
         end
     end
 
+    -- CPS
     if tick() - lastUpdate >= 1 then
         CPSLabel:Set("CPS Atual: " .. cCount)
         cCount = 0
@@ -189,6 +213,6 @@ end)
 
 Rayfield:Notify({
     Title = "KA HUB CARREGADO",
-    Content = "Tudo funcionando corretamente.",
+    Content = "Tudo corrigido e funcionando no Delta.",
     Duration = 3
 })
