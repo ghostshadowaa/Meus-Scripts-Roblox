@@ -16,87 +16,91 @@ _g.ScriptJaCarregado = true
 -- Estados das Funções
 local Config = {
     ESP = false,
-    Aimbot = false,
-    MenuVisible = true -- Começa visível para facilitar o uso
+    Aimbot = false
 }
 
--- [[ INTERFACE DO USUÁRIO (MOBILE OTIMIZADO) ]] ---
+-- [[ INTEGRAÇÃO COM RAYFIELD UI (Substituindo a UI Mobile) ]]
+-- Carrega a biblioteca Rayfield
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
 
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local ESPBtn = Instance.new("TextButton")
-local AimbotBtn = Instance.new("TextButton")
-local ToggleButton = Instance.new("TextButton") -- Novo botão para abrir/fechar
+-- Configuração da Janela (Baseado no seu input de Rayfield)
+local Window = Rayfield:CreateWindow({
+   Name = "Auxílio de Combate e Visual",
+   Icon = 0, 
+   LoadingTitle = "Carregando Auxílio",
+   LoadingSubtitle = "Pronto para a ação",
+   ShowText = "MENU", 
+   Theme = "Default", 
 
-ScreenGui.Name = "PainelMobile"
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.ResetOnSpawn = false
+   ToggleUIKeybind = "Insert", -- Trocado para Insert, que é o padrão do seu primeiro script.
+   -- Use "K" se preferir a configuração original do Rayfield que você forneceu.
 
--- Botão Flutuante (Toggle) - Substitui a tecla INSERT
-ToggleButton.Parent = ScreenGui
-ToggleButton.Size = UDim2.new(0, 70, 0, 70)
-ToggleButton.Position = UDim2.new(1, -80, 0, 10) -- Canto superior direito
-ToggleButton.Text = "MENU"
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.TextSize = 18
-ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-ToggleButton.TextColor3 = Color3.new(1, 1, 1)
-ToggleButton.CornerRadius = UDim.new(0.5, 0) -- Transforma em círculo
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false, 
 
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
--- Posição otimizada para Mobile (superior esquerdo para não cobrir o jogo todo)
-MainFrame.Position = UDim2.new(0.02, 0, 0.1, 0) 
-MainFrame.Size = UDim2.new(0, 200, 0, 150)
-MainFrame.Active = true
-MainFrame.Visible = Config.MenuVisible
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "AuxilioMobileAdaptado", 
+      FileName = "Config"
+   },
 
-Title.Parent = MainFrame
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "Auxílio Mobile"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+   Discord = {
+      Enabled = false, 
+      Invite = "noinvitelink", 
+      RememberJoins = true 
+   },
 
-local function ConfigurarBotao(btn, texto, pos)
-    btn.Parent = MainFrame
-    btn.Position = pos
-    btn.Size = UDim2.new(0.9, 0, 0, 35)
-    btn.Text = texto
-    btn.Font = Enum.Font.SourceSans
-    btn.TextSize = 16
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.BorderSizePixel = 0
-    btn.AnchorPoint = Vector2.new(0.5, 0) -- Centraliza o botão dentro da MainFrame
-end
+   KeySystem = false, 
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided", 
+      FileName = "Key", 
+      SaveKey = true, 
+      GrabKeyFromSite = false, 
+      Key = {"Hello"} 
+   }
+})
 
--- Os botões são configurados no centro da MainFrame
-ConfigurarBotao(ESPBtn, "ESP: OFF", UDim2.new(0.5, 0, 0.35, 0))
-ConfigurarBotao(AimbotBtn, "Aimbot: OFF", UDim2.new(0.5, 0, 0.65, 0))
+-- Cria a Aba "Combate"
+local CombatTab = Window:CreateTab("Combate", "rbxassetid://4483362458") -- Icone de espada/luta
 
--- Lógica para Abertura/Fechamento (Toggle)
-ToggleButton.MouseButton1Click:Connect(function()
-    Config.MenuVisible = not Config.MenuVisible
-    MainFrame.Visible = Config.MenuVisible
-    ToggleButton.BackgroundColor3 = Config.MenuVisible and Color3.fromRGB(255, 100, 0) or Color3.fromRGB(0, 150, 255)
-end)
+-- Cria a Seção "Aimbot"
+local AimbotSection = CombatTab:CreateSection("Aimbot")
 
--- Lógica do ESP 
-ESPBtn.MouseButton1Click:Connect(function()
-    Config.ESP = not Config.ESP
-    ESPBtn.Text = "ESP: " .. (Config.ESP and "ON" or "OFF")
-    ESPBtn.BackgroundColor3 = Config.ESP and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
-end)
+-- Toggle para Aimbot (Usando a lógica de ativação/desativação do seu script original)
+CombatTab:CreateToggle({
+    Name = "Ativar Aimbot",
+    CurrentValue = Config.Aimbot,
+    Flag = "AimbotToggle",
+    Callback = function(state)
+        Config.Aimbot = state
+    end,
+})
 
--- Lógica do Aimbot 
-AimbotBtn.MouseButton1Click:Connect(function()
-    Config.Aimbot = not Config.Aimbot
-    AimbotBtn.Text = "Aimbot: " .. (Config.Aimbot and "ON" or "OFF")
-    AimbotBtn.BackgroundColor3 = Config.Aimbot and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
-end)
+-- Cria a Seção "Visual"
+local VisualSection = CombatTab:CreateSection("Visual")
 
--- [[ LÓGICA DAS FUNCIONALIDADES ]]
+-- Toggle para ESP (Usando a lógica de ativação/desativação do seu script original)
+CombatTab:CreateToggle({
+    Name = "Ativar ESP (Destaque)",
+    CurrentValue = Config.ESP,
+    Flag = "ESPToggle",
+    Callback = function(state)
+        Config.ESP = state
+        -- Se o ESP for desativado, remove todos os Highlights existentes imediatamente
+        if not state then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character then
+                    local highlight = player.Character:FindFirstChild("ESPHighlight")
+                    if highlight then highlight:Destroy() end
+                end
+            end
+        end
+    end,
+})
+
+-- [[ LÓGICA DAS FUNCIONALIDADES (Mantida e Otimizada) ]]
 
 local function GetClosestPlayer()
     local closest = nil
@@ -109,10 +113,11 @@ local function GetClosestPlayer()
             if head then
                 local pos, onScreen = Camera:WorldToViewportPoint(head.Position)
                 
-                -- Checa se o alvo está visível e a uma distância razoável (por exemplo, 400 pixels do centro)
+                -- Usa a lógica de distância da tela (ideal para Aimbot)
                 if onScreen then
                     local distance = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
                     
+                    -- Limite de distância mantido em 400 pixels para filtrar alvos fora do campo de visão
                     if distance < shortestDistance and distance < 400 then 
                         closest = player
                         shortestDistance = distance
@@ -134,12 +139,12 @@ RunService.RenderStepped:Connect(function()
             local targetPos = target.Character.Head.Position
             local lookCFrame = CFrame.new(Camera.CFrame.Position, targetPos)
             
-            -- Interpolação suave para um movimento de câmera menos abrupto
-            Camera.CFrame = Camera.CFrame:Lerp(lookCFrame, 0.15) -- Aumentei um pouco a velocidade para mobile
+            -- Interpolação suave mantida (0.15)
+            Camera.CFrame = Camera.CFrame:Lerp(lookCFrame, 0.15) 
         end
     end
 
-    -- Lógica de ESP
+    -- Lógica de ESP (Highlight)
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
             local highlight = player.Character:FindFirstChild("ESPHighlight")
@@ -154,11 +159,10 @@ RunService.RenderStepped:Connect(function()
                     highlight.DepthMode = Enum.DepthMode.AlwaysOnTop
                 end
             else
-                -- Remove o Highlight se o ESP estiver desligado
                 if highlight then highlight:Destroy() end
             end
         end
     end
 end)
 
-print("Script carregado com sucesso para dispositivos móveis!")
+print("Script Rayfield de Combate e Visual carregado com sucesso! Use a tecla configurada ('Insert' ou 'K') para abrir o menu.")
