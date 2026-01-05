@@ -20,12 +20,13 @@ local Config = {
     -- Auto Clicker
     Clicking = false,
     ClickCount = 0,
+    ClickDelay = 0.01 -- NOVO: Delay inicial (0.01s = 100 CPS teórico)
 }
 
 -- [[ VARIÁVEIS DE CONTROLE DE TEMPO/CPS ]]
 local lastUpdateTime = tick()
 local lastClickCount = 0
-local heartbeatConn = nil -- Conexão do Auto Clicker
+local clickerThread = nil -- NOVO: Variável para a thread do loop do Clicker
 local cpsDisplayConn = nil -- Conexão para atualizar o CPS na UI
 
 -- [[ CÍRCULO DE FOV ]]
@@ -35,22 +36,7 @@ FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 FOVCircle.Transparency = 0.5
 FOVCircle.Filled = false
 FOVCircle.Visible = false
-FOVCircle.Radius = Config.FOV -- Inicializa com o valor padrão
-
--- [[ JANELA PRINCIPAL RAYFIELD ]]
-local Window = Rayfield:CreateWindow({
-   Name = "KA Hub | Premium Edition",
-   LoadingTitle = "Carregando Multi-Ferramentas...",
-   LoadingSubtitle = "by Sirius & KA",
-   ConfigurationSaving = { Enabled = true, FolderName = "KA_Hub_Config", FileName = "Config" },
-   KeySystem = true, 
-   KeySettings = {
-      Title = "Sistema de Chave",
-      Subtitle = "Acesse o Hub",
-      Note = "A chave é: hub",
-      Key = {"hub"} 
-   }
-})
+FOVCircle.Radius = Config.FOV
 
 ---
 --- LÓGICA DE SUPORTE (FUNÇÕES)
@@ -76,18 +62,21 @@ local function GetClosestPlayer()
     return target
 end
 
--- Função central do clique (chamada pelo Heartbeat)
-local function doUltraClick()
-    local mousePos = UserInputService:GetMouseLocation()
-    -- Adiciona uma pequena variação para simular o jitter do mouse
-    local x = mousePos.X + math.random(-1, 1)
-    local y = mousePos.Y + math.random(-1, 1)
+-- Função central do clique (agora usando task.wait)
+local function doClickLoop()
+    while Config.Clicking do
+        local mousePos = UserInputService:GetMouseLocation()
+        local x = mousePos.X + math.random(-1, 1)
+        local y = mousePos.Y + math.random(-1, 1)
 
-    -- Simula o clique na posição atual do mouse
-    VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-    VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-    
-    Config.ClickCount = Config.ClickCount + 1
+        VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+        
+        Config.ClickCount = Config.ClickCount + 1
+        
+        -- Espera baseada no delay manual configurado
+        task.wait(Config.ClickDelay)
+    end
 end
 
 -- Função para atualizar o Display de CPS (chamada pelo RenderStepped)
@@ -95,52 +84,70 @@ local function updateCPSDisplay(CPSLabel, TotalClicksLabel)
     if tick() - lastUpdateTime >= 1 then
         local cps = Config.ClickCount - lastClickCount
         CPSLabel:Set("CPS Atual: " .. cps)
-        -- Não atualiza lastClickCount e lastUpdateTime aqui, pois será feito
-        -- no final do bloco do if, garantindo a contagem correta a cada segundo.
         lastClickCount = Config.ClickCount
         lastUpdateTime = tick()
     end
-    -- Isso garante que o Total de Cliques seja atualizado constantemente, mesmo sem a contagem de 1 segundo.
     TotalClicksLabel:Set("Total de Cliques: " .. Config.ClickCount)
 end
 
+-- [[ JANELA PRINCIPAL RAYFIELD ]]
+local Window = Rayfield:CreateWindow({
+   Name = "KA Hub | Premium Edition",
+   LoadingTitle = "Carregando Multi-Ferramentas...",
+   LoadingSubtitle = "by Sirius & KA",
+   ConfigurationSaving = { Enabled = true, FolderName = "KA_Hub_Config", FileName = "Config" },
+   KeySystem = true, 
+   KeySettings = {
+      Title = "Sistema de Chave",
+      Subtitle = "Acesse o Hub",
+      Note = "A chave é: hub",
+      Key = {"hub"} 
+   }
+})
+
 ---
---- SEÇÃO: AUTO CLICKER (ULTRA SPEED) - CORRIGIDA
+--- SEÇÃO: AUTO CLICKER (COM CONTROLE MANUAL)
 ---
 local ClickerTab = Window:CreateTab("Auto Clicker", 4483362458)
 
 local CPSLabel = ClickerTab:CreateLabel("CPS Atual: 0")
 local TotalClicksLabel = ClickerTab:CreateLabel("Total de Cliques: 0")
 
+-- NOVO SLIDER DE VELOCIDADE
+ClickerTab:CreateSlider({
+   Name = "Delay (0.01s = 100 CPS)",
+   Range = {0.005, 0.5}, -- 0.005s (200 CPS) a 0.5s (2 CPS)
+   Increment = 0.005,
+   Suffix = "s",
+   CurrentValue = Config.ClickDelay,
+   Callback = function(Value)
+      Config.ClickDelay = Value
+   end,
+})
+
 ClickerTab:CreateToggle({
-   Name = "Ativar Auto Clicker (MAX SPEED)",
+   Name = "Ativar Auto Clicker",
    CurrentValue = Config.Clicking,
    Callback = function(Value)
       Config.Clicking = Value
       
       if Value then
-          -- CORREÇÃO: Desconecta e zera qualquer conexão antiga para evitar falhas.
-          if heartbeatConn then heartbeatConn:Disconnect() end
-          if cpsDisplayConn then cpsDisplayConn:Disconnect() end
+          -- Inicia a thread do loop de clique
+          clickerThread = coroutine.wrap(doClickLoop)()
           
-          -- 1. Inicia o clique na velocidade máxima (Heartbeat)
-          heartbeatConn = RunService.Heartbeat:Connect(doUltraClick)
-          
-          -- 2. Inicia a atualização do display de CPS/Contador (RenderStepped)
+          -- Inicia a atualização do display de CPS/Contador
           cpsDisplayConn = RunService.RenderStepped:Connect(function()
               updateCPSDisplay(CPSLabel, TotalClicksLabel)
           end)
           
       else
-          -- Desconecta e zera ambas as conexões ao desativar
-          if heartbeatConn then 
-              heartbeatConn:Disconnect()
-              heartbeatConn = nil -- ESSENCIAL para que o Toggle funcione na próxima vez
-          end
+          -- Desconecta o display de CPS
           if cpsDisplayConn then 
               cpsDisplayConn:Disconnect()
-              cpsDisplayConn = nil -- ESSENCIAL para que o Toggle funcione na próxima vez
+              cpsDisplayConn = nil
           end
+          
+          -- A thread de clique para automaticamente quando Config.Clicking = false
           
           -- Garante que o display seja atualizado pela última vez ao parar
           updateCPSDisplay(CPSLabel, TotalClicksLabel)
@@ -214,7 +221,7 @@ VisualTab:CreateToggle({
 --- LOOP PRINCIPAL (RENDERSTEPPED - LÓGICA)
 ---
 
--- Conexão principal para Aimbot, ESP e FOV. O Clicker e CPS agora têm suas próprias conexões.
+-- Conexão principal para Aimbot, ESP e FOV.
 RunService.RenderStepped:Connect(function()
     -- Update FOV Circle
     FOVCircle.Position = UserInputService:GetMouseLocation()
@@ -229,8 +236,6 @@ RunService.RenderStepped:Connect(function()
     
     -- ESP Logic
     if Config.ESP then
-        -- Esta lógica foi movida aqui para garantir que os highlights sejam criados
-        -- e persistam enquanto o ESP estiver ativo, sem depender da lógica de desligamento.
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
                 local highlight = player.Character:FindFirstChild("ESPHighlight")
