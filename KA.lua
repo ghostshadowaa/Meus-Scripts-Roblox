@@ -1,267 +1,171 @@
---[[ 🛠️ KA HUB | ULTIMATE V8 REBORN - ESP & UI FIX EDITION 🛠️ ]]
+-- [[ KA HUB | QUEST SYSTEM UI ]]
 
--- Rayfield UI Library (Link Padrão/Estável do GitHub)
-local Rayfield = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/shlexware/Rayfield/main/source"
-))()
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- ⚙️ SERVIÇOS
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
--- local VIM = game:GetService("VirtualInputManager") -- Removido, será substituído por mouse1press/release
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
--- ⚙️ CONFIGURAÇÕES
-local Config = {
-    Aimbot = false,
-    FOV = 150,
-    ESP = false,
-    -- Clicker
-    Clicking = false,
-    ClickCount = 0,
-    LastClickCount = 0,
-    LastUpdate = tick(),
-    -- Movimento
-    SpeedHack = false,
-    WalkSpeed = 16,
-    InfiniteJump = false,
-    Fly = false,
-    FlySpeed = 50,
-}
-
-local heartbeatConn = nil
--- CFrame de Teleporte para "Uncloked All Islands"
-local ISLANDS_CFRAME = CFrame.new(
-    -264.195801, 14361.75, 188.697403, 
-    0.999998212, 0, 0.00189908384, 
-    0, 1, 0, 
-    -0.00189908384, 0, 0.999998212
-)
-
--- [[ MIRA FÍSICA V8 (ARRASTÁVEL) ]]
--- Adiciona um Pcall para evitar falha se PlayerGui não estiver pronto
-local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KA_V8_Final"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = playerGui
-
-local CursorHitbox = Instance.new("Frame", ScreenGui)
-CursorHitbox.Size = UDim2.new(0, 60, 0, 60)
-CursorHitbox.Position = UDim2.new(0.5, -30, 0.5, -30)
-CursorHitbox.BackgroundTransparency = 1
-CursorHitbox.Active = true
-CursorHitbox.Draggable = true
-
-local CursorVisual = Instance.new("Frame", CursorHitbox)
-CursorVisual.Size = UDim2.new(0, 40, 0, 40)
-CursorVisual.Position = UDim2.new(0.5, -20, 0.5, -20)
-CursorVisual.BackgroundTransparency = 1
-
-local function createLine(size, pos)
-    local l = Instance.new("Frame", CursorVisual)
-    l.Size = size
-    l.Position = pos
-    l.BackgroundColor3 = Color3.new(1, 1, 1) -- Branco
-    l.BorderSizePixel = 0
-    return l
+-- =========================
+-- WORLD CHECK (ORIGINAL)
+-- =========================
+if game.PlaceId == 2753915549 then
+    World1 = true
+elseif game.PlaceId == 4442272183 then
+    World2 = true
+elseif game.PlaceId == 7449423635 then
+    World3 = true
+else
+    LocalPlayer:Kick("Do not Support, Please wait...")
 end
-createLine(UDim2.new(1, 0, 0, 2), UDim2.new(0, 0, 0.5, -1)) -- Horizontal
-createLine(UDim2.new(0, 2, 1, 0), UDim2.new(0.5, -1, 0, 0)) -- Vertical
 
--- [[ JANELA PRINCIPAL ]]
+-- =========================
+-- CHECK QUEST (ORIGINAL)
+-- =========================
+function CheckQuest()
+    MyLevel = LocalPlayer.Data.Level.Value
+
+    if World1 then
+        if MyLevel >= 1 and MyLevel <= 9 then
+            Mon = "Bandit"
+            LevelQuest = 1
+            NameQuest = "BanditQuest1"
+            NameMon = "Bandit"
+            CFrameQuest = CFrame.new(1059.37, 15.44, 1550.42)
+            CFrameMon = CFrame.new(1045.96, 27.00, 1560.82)
+
+        elseif MyLevel >= 10 and MyLevel <= 14 then
+            Mon = "Monkey"
+            LevelQuest = 1
+            NameQuest = "JungleQuest"
+            NameMon = "Monkey"
+            CFrameQuest = CFrame.new(-1598.08, 35.55, 153.37)
+            CFrameMon = CFrame.new(-1448.51, 67.85, 11.46)
+
+        elseif MyLevel >= 15 and MyLevel <= 29 then
+            Mon = "Gorilla"
+            LevelQuest = 2
+            NameQuest = "JungleQuest"
+            NameMon = "Gorilla"
+            CFrameQuest = CFrame.new(-1598.08, 35.55, 153.37)
+            CFrameMon = CFrame.new(-1129.88, 40.46, -525.42)
+
+        elseif MyLevel >= 30 and MyLevel <= 39 then
+            Mon = "Pirate"
+            LevelQuest = 1
+            NameQuest = "BuggyQuest1"
+            NameMon = "Pirate"
+            CFrameQuest = CFrame.new(-1141.07, 4.10, 3831.54)
+            CFrameMon = CFrame.new(-1103.51, 13.75, 3896.09)
+
+        elseif MyLevel >= 40 and MyLevel <= 59 then
+            Mon = "Brute"
+            LevelQuest = 2
+            NameQuest = "BuggyQuest1"
+            NameMon = "Brute"
+            CFrameQuest = CFrame.new(-1141.07, 4.10, 3831.54)
+            CFrameMon = CFrame.new(-1140.08, 14.80, 4322.92)
+
+        elseif MyLevel >= 60 and MyLevel <= 74 then
+            Mon = "Desert Bandit"
+            LevelQuest = 1
+            NameQuest = "DesertQuest"
+            NameMon = "Desert Bandit"
+            CFrameQuest = CFrame.new(894.48, 5.14, 4392.43)
+            CFrameMon = CFrame.new(924.79, 6.44, 4481.58)
+
+        elseif MyLevel >= 75 and MyLevel <= 89 then
+            Mon = "Desert Officer"
+            LevelQuest = 2
+            NameQuest = "DesertQuest"
+            NameMon = "Desert Officer"
+            CFrameQuest = CFrame.new(894.48, 5.14, 4392.43)
+            CFrameMon = CFrame.new(1608.28, 8.61, 4371.00)
+
+        elseif MyLevel >= 90 and MyLevel <= 99 then
+            Mon = "Snow Bandit"
+            LevelQuest = 1
+            NameQuest = "SnowQuest"
+            NameMon = "Snow Bandit"
+            CFrameQuest = CFrame.new(1389.74, 88.15, -1298.90)
+            CFrameMon = CFrame.new(1354.34, 87.27, -1393.94)
+
+        elseif MyLevel >= 100 and MyLevel <= 119 then
+            Mon = "Snowman"
+            LevelQuest = 2
+            NameQuest = "SnowQuest"
+            NameMon = "Snowman"
+            CFrameQuest = CFrame.new(1389.74, 88.15, -1298.90)
+            CFrameMon = CFrame.new(1201.64, 144.57, -1550.06)
+
+        elseif MyLevel >= 120 and MyLevel <= 149 then
+            Mon = "Chief Petty Officer"
+            LevelQuest = 1
+            NameQuest = "MarineQuest2"
+            NameMon = "Chief Petty Officer"
+            CFrameQuest = CFrame.new(-5039.58, 27.35, 4324.68)
+            CFrameMon = CFrame.new(-4881.23, 22.65, 4273.75)
+
+        elseif MyLevel >= 150 then
+            Mon = "Sky Bandit"
+            LevelQuest = 1
+            NameQuest = "SkyQuest"
+            NameMon = "Sky Bandit"
+            CFrameQuest = CFrame.new(-4839.53, 716.36, -2619.44)
+            CFrameMon = CFrame.new(-4953.20, 295.74, -2899.22)
+        end
+    end
+end
+
+-- =========================
+-- UI RAYFIELD (SÓ PARA QUEST)
+-- =========================
 local Window = Rayfield:CreateWindow({
-   Name = "KA Hub | Ultimate V8",
-   LoadingTitle = "Injetando Funções...",
-   LoadingSubtitle = "AutoClick + Combat + Fly + Jump + Teleport",
+   Name = "KA HUB | Quest System",
+   LoadingTitle = "CheckQuest Loader",
+   LoadingSubtitle = "Blox Fruits",
    ConfigurationSaving = { Enabled = false }
 })
 
--- ============ ABA AUTO CLICKER ============
-local ClickTab = Window:CreateTab("Auto Clicker", "rbxassetid://4483362458")
-local CPSLabel = ClickTab:CreateLabel("CPS Atual: 0")
+local QuestTab = Window:CreateTab("Quest", 4483362458)
 
-ClickTab:CreateToggle({
-   Name = "ATIVAR MODO V8 (FIX)",
-   CurrentValue = false,
-   Callback = function(v)
-      Config.Clicking = v
-      
-      if v and not heartbeatConn then
-          -- Usando mouse1press/mouse1release para compatibilidade máxima
-          heartbeatConn = RunService.Heartbeat:Connect(function()
-              pcall(mouse1press) -- Usando pcall para evitar crash se a função não existir
-              pcall(mouse1release)
-
-              Config.ClickCount = Config.ClickCount + 1
-          end)
-      elseif not v and heartbeatConn then 
-          heartbeatConn:Disconnect()
-          heartbeatConn = nil
-      end
-   end,
-})
-
--- ============ ABA MOVIMENTO ============
-local MoveTab = Window:CreateTab("Movimento", "rbxassetid://4483362458")
-
-MoveTab:CreateToggle({
-   Name = "Speed Hack",
-   CurrentValue = false,
-   Callback = function(v) Config.SpeedHack = v end,
-})
-
-MoveTab:CreateSlider({
-   Name = "Velocidade (WalkSpeed)",
-   Range = {16, 250},
-   Increment = 1,
-   CurrentValue = Config.WalkSpeed,
-   Callback = function(v) Config.WalkSpeed = v end,
-})
-
-MoveTab:CreateToggle({
-   Name = "Infinite Jump",
-   CurrentValue = false,
-   Callback = function(v) Config.InfiniteJump = v end,
-})
-
-MoveTab:CreateToggle({
-   Name = "Ativar Fly (Voar)",
-   CurrentValue = false,
-   Callback = function(v) Config.Fly = v end,
-})
-
--- ============ ABA COMBATE ============
-local CombatTab = Window:CreateTab("Combate", "rbxassetid://4483362458")
-
-CombatTab:CreateToggle({
-    Name = "Aimbot (Head)", 
-    CurrentValue = false, 
-    Callback = function(v) Config.Aimbot = v end
-})
-
-CombatTab:CreateToggle({
-    Name = "ESP Highlights", 
-    CurrentValue = false, 
-    Callback = function(v) 
-        Config.ESP = v 
-        if not v then
-            -- Limpa o ESP de todos os jogadores quando desliga
-            for _, p in pairs(Players:GetPlayers()) do
-                if p.Character and p.Character:FindFirstChild("V8_ESP") then
-                    p.Character.V8_ESP:Destroy()
-                end
-            end
-        end
-    end
-})
-
--- ============ ABA TELEPORTE ============
-local TeleportTab = Window:CreateTab("Teleporte", "rbxassetid://6033092823")
-
-TeleportTab:CreateButton({
-    Name = "Uncloked All Islands",
+QuestTab:CreateButton({
+    Name = "Ver Quest Atual",
     Callback = function()
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        CheckQuest()
 
-        if hrp then
-            -- Desabilita temporariamente o movimento e coloca no chão para evitar física estranha
-            local oldState = hrp.Anchored
-            hrp.Anchored = true
-            hrp.CFrame = ISLANDS_CFRAME
-            hrp.Anchored = oldState
+        Rayfield:Notify({
+            Title = "Quest Detectada",
+            Content =
+                "Monstro: ".. tostring(Mon) ..
+                "\nQuest: ".. tostring(NameQuest) ..
+                "\nLevel Quest: ".. tostring(LevelQuest),
+            Duration = 6
+        })
+    end
+})
 
-            Rayfield:Notify({
-                Title = "TELEPORTE SUCESSO",
-                Content = "Teleportado para a ilha secreta.",
-                Duration = 3
-            })
-        else
-            Rayfield:Notify({
-                Title = "ERRO DE TELEPORTE",
-                Content = "Character ou HumanoidRootPart não encontrado.",
-                Duration = 3
-            })
+QuestTab:CreateButton({
+    Name = "Teleportar para Quest",
+    Callback = function()
+        CheckQuest()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character:PivotTo(CFrameQuest)
         end
     end
 })
 
--- [[ LÓGICA DE MOVIMENTO DE INF JUMP ]]
-UserInputService.JumpRequest:Connect(function()
-    if Config.InfiniteJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid:ChangeState("Jumping")
-    end
-end)
-
--- [[ LOOP PRINCIPAL (RENDERSTEPPED) ]]
-RunService.RenderStepped:Connect(function()
-    -- 1. Atualiza CPS
-    if tick() - Config.LastUpdate >= 1 then
-        CPSLabel:Set("CPS Atual: " .. (Config.ClickCount - Config.LastClickCount))
-        Config.LastClickCount = Config.ClickCount
-        Config.LastUpdate = tick()
-    end
-
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChild("Humanoid")
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-
-    if hum and hrp then
-        -- 2. Speed Hack
-        hum.WalkSpeed = Config.SpeedHack and Config.WalkSpeed or 16
-        
-        -- 3. Fly (Voar)
-        if Config.Fly then
-            local moveDir = hum.MoveDirection
-            local flyVel = Vector3.new(0,0,0)
-            -- Cima/Baixo
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then flyVel = Vector3.new(0, Config.FlySpeed, 0)
-            elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then flyVel = Vector3.new(0, -Config.FlySpeed, 0) end
-            
-            hrp.Velocity = (moveDir * Config.FlySpeed) + flyVel
+QuestTab:CreateButton({
+    Name = "Teleportar para Monstro",
+    Callback = function()
+        CheckQuest()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character:PivotTo(CFrameMon)
         end
     end
+})
 
-    -- 4. Lógica de ESP (Atualização contínua)
-    if Config.ESP then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character.Parent then
-                local h = p.Character:FindFirstChild("V8_ESP") or Instance.new("Highlight")
-                if h.Parent ~= p.Character then h.Parent = p.Character end 
-                h.Name = "V8_ESP"
-                h.FillColor = Color3.fromRGB(255, 0, 0)
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.FillTransparency = 0.5
-            end
-        end
-    end
-
-    -- 5. Aimbot
-    if Config.Aimbot then
-        local target = nil
-        local shortestDist = Config.FOV
-        local mousePos = UserInputService:GetMouseLocation()
-
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and p.Character.Parent then
-                local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
-                if onScreen then
-                    local mag = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-                    if mag < shortestDist then 
-                        shortestDist = mag 
-                        target = p 
-                    end
-                end
-            end
-        end
-        if target then 
-            -- Aimbot instantâneo (sem smooth)
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position) 
-        end
-    end
-end)
-
-Rayfield:Notify({Title = "KA HUB CARREGADO (FIX UI)", Content = "Carregamento de funções corrigido.", Duration = 5})
+Rayfield:Notify({
+    Title = "KA HUB",
+    Content = "Sistema de Quest carregado com sucesso!",
+    Duration = 5
+})
