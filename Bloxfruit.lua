@@ -1,4 +1,9 @@
-if game.PlaceId == 2753915549 then
+ [[ KA HUB | QUEST SYSTEM UI ]]
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayerif game.PlaceId == 2753915549 then
     World1 = true
 elseif game.PlaceId == 4442272183 then
     World2 = true
@@ -11367,4 +11372,56 @@ OrionLib:MakeNotification({
     Content = "Loading Config Complete!!",
     Image = "rbxassetid://119980140458596",
     Time = 5
+})
+ RAYFIELD (SÓ PARA QUEST)
+-- =========================
+local Window = Rayfield:CreateWindow({
+   Name = "KA HUB | Quest System",
+   LoadingTitle = "CheckQuest Loader",
+   LoadingSubtitle = "Blox Fruits",
+   ConfigurationSaving = { Enabled = false }
+})
+
+local QuestTab = Window:CreateTab("Quest", 4483362458)
+
+QuestTab:CreateButton({
+    Name = "Ver Quest Atual",
+    Callback = function()
+        CheckQuest()
+
+        Rayfield:Notify({
+            Title = "Quest Detectada",
+            Content =
+                "Monstro: ".. tostring(Mon) ..
+                "\nQuest: ".. tostring(NameQuest) ..
+                "\nLevel Quest: ".. tostring(LevelQuest),
+            Duration = 6
+        })
+    end
+})
+
+QuestTab:CreateButton({
+    Name = "Teleportar para Quest",
+    Callback = function()
+        CheckQuest()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character:PivotTo(CFrameQuest)
+        end
+    end
+})
+
+QuestTab:CreateButton({
+    Name = "Teleportar para Monstro",
+    Callback = function()
+        CheckQuest()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character:PivotTo(CFrameMon)
+        end
+    end
+})
+
+Rayfield:Notify({
+    Title = "KA HUB",
+    Content = "Sistema de Quest carregado com sucesso!",
+    Duration = 5
 })
