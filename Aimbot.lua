@@ -1,36 +1,46 @@
+local Rayfield = loadstring(game:HttpGet('sirius.menu'))()
+
 local Window = Rayfield:CreateWindow({
    Name = "Rayfield Example Window",
-   Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+   Icon = 0, 
    LoadingTitle = "Rayfield Interface Suite",
    LoadingSubtitle = "by Sirius",
-   ShowText = "Rayfield", -- for mobile users to unhide rayfield, change if you'd like
-   Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+   ShowText = "Rayfield",
+   Theme = "Default", 
 
-   ToggleUIKeybind = "K", -- The keybind to toggle the UI visibility (string like "K" or Enum.KeyCode)
+   ToggleUIKeybind = Enum.KeyCode.K, -- Recomendado usar Enum para melhor compatibilidade
 
    DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+   DisableBuildWarnings = false, 
 
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = nil, -- Create a custom folder for your hub/game
+      FolderName = "KA_Hub_Config", -- Pasta criada em workspace
       FileName = "Premium Hub"
    },
 
    Discord = {
-      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
-      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
-      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+      Enabled = false,
+      Invite = "noinvitelink",
+      RememberJoins = true 
    },
 
-   KeySystem = false, -- Set this to true to use our key system
+   KeySystem = true, -- Ativado para testar as configurações abaixo
    KeySettings = {
-      Title = "KA Hub""
-      Subtitle = "Key System",
-      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
-      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"hub"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+      Title = "KA Hub", -- Corrigido: Removida aspas extra
+      Subtitle = "Key System", -- Corrigido: Adicionada vírgula antes
+      Note = "A chave é: hub", 
+      FileName = "KA_Key", 
+      SaveKey = true, 
+      GrabKeyFromSite = false,
+      Key = {"hub"} 
    }
+})
+
+-- Exemplo de Notificação para confirmar que carregou
+Rayfield:Notify({
+   Title = "Sucesso!",
+   Content = "O script foi carregado com sucesso.",
+   Duration = 5,
+   Image = 4483362458,
 })
