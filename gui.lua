@@ -1,6 +1,3 @@
--- ===================================
---           Variáveis Globais
--- ===================================
 
 local menu_aberto = false -- Estado do painel (aberto/fechado)
 
