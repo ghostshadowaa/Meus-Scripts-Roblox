@@ -1,23 +1,32 @@
--- Carregando a biblioteca Rayfield
+-- [[ KA HUB | PREMIUM EDITION - UNIFIED VERSION ]]
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- [[ CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ]]
+-- [[ SERVIÇOS ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager") -- Para o Auto Clicker
-local TweenService = game:GetService("TweenService") -- Para o Auto Clicker (se quiser efeitos)
-
+local VIM = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
+-- [[ CONFIGURAÇÕES ]]
 local Config = {
+    -- Combate/Aimbot
     Aimbot = false,
-    ESP = false,
-    AutoClicker = false, -- Nova configuração integrada
     FOV = 150,
-    CircleVisible = false
+    CircleVisible = false,
+    -- Visuais
+    ESP = false,
+    -- Auto Clicker
+    Clicking = false,
+    ClickCount = 0,
 }
+
+-- [[ VARIÁVEIS DE CONTROLE DE TEMPO/CPS ]]
+local lastUpdateTime = tick()
+local lastClickCount = 0
+local heartbeatConn = nil -- Conexão do Auto Clicker
+local cpsDisplayConn = nil -- Conexão para atualizar o CPS na UI
 
 -- [[ CÍRCULO DE FOV ]]
 local FOVCircle = Drawing.new("Circle")
@@ -26,13 +35,13 @@ FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 FOVCircle.Transparency = 0.5
 FOVCircle.Filled = false
 FOVCircle.Visible = false
-FOVCircle.Radius = Config.FOV -- Inicializa o raio
+FOVCircle.Radius = Config.FOV -- Inicializa com o valor padrão
 
 -- [[ JANELA PRINCIPAL RAYFIELD ]]
 local Window = Rayfield:CreateWindow({
    Name = "KA Hub | Premium Edition",
-   LoadingTitle = "Carregando Interface...",
-   LoadingSubtitle = "by Sirius",
+   LoadingTitle = "Carregando Multi-Ferramentas...",
+   LoadingSubtitle = "by Sirius & KA",
    ConfigurationSaving = { Enabled = true, FolderName = "KA_Hub_Config", FileName = "Config" },
    KeySystem = true, 
    KeySettings = {
@@ -43,64 +52,10 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
--- [[ LÓGICA DO AUTO CLICKER (Integrado) ]]
-local Clicking = false
-local ClickCount = 0
-local heartbeatConn = nil
-local lastClickCount = 0
-local lastUpdateTime = tick()
-local ClicksPerSecond = 0
-local AimbotTarget = nil -- Para o Clicker usar a posição do alvo se o Aimbot estiver ligado
+---
+--- LÓGICA DE SUPORTE (FUNÇÕES)
+---
 
-local function doUltraClick()
-    -- Prioriza o alvo do Aimbot se estiver ativo, senão usa a posição do mouse
-    local pos = UserInputService:GetMouseLocation()
-    
-    if Config.Aimbot and AimbotTarget and AimbotTarget.Character and AimbotTarget.Character:FindFirstChild("Head") then
-        local viewportPos, onScreen = Camera:WorldToViewportPoint(AimbotTarget.Character.Head.Position)
-        if onScreen then
-             pos = Vector2.new(viewportPos.X, viewportPos.Y)
-        end
-    end
-
-    local x = pos.X + math.random(-2, 2)
-    local y = pos.Y + math.random(-2, 2)
-
-    -- Simula o clique do mouse no ponto
-    VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, nil, 0)
-    VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, nil, 0)
-
-    ClickCount = ClickCount + 1
-end
-
-local function toggleAutoClicker(Enabled)
-    Clicking = Enabled
-    Config.AutoClicker = Enabled
-    
-    if Enabled then
-        heartbeatConn = RunService.Heartbeat:Connect(doUltraClick)
-        warn("Auto Clicker ATIVADO! Velocidade máxima.")
-    else
-        if heartbeatConn then
-            heartbeatConn:Disconnect()
-            heartbeatConn = nil
-        end
-        warn("Auto Clicker DESATIVADO.")
-    end
-end
-
--- Cálculo de CPS (Opcional, apenas para mostrar no console/notificação)
-RunService.RenderStepped:Connect(function()
-    if Clicking and tick() - lastUpdateTime >= 1 then
-        ClicksPerSecond = ClickCount - lastClickCount
-        lastClickCount = ClickCount
-        lastUpdateTime = tick()
-        -- Se quiser mostrar o CPS em tempo real, use Rayfield:Notify ou print:
-        -- print("CPS: " .. ClicksPerSecond .. " | Clicks Totais: " .. ClickCount)
-    end
-end)
-
--- [[ LÓGICA DO AIMBOT ]]
 local function GetClosestPlayer()
     local target = nil
     local shortestDistance = Config.FOV
@@ -121,40 +76,85 @@ local function GetClosestPlayer()
     return target
 end
 
--- [[ LÓGICA DO ESP ]]
-local function UpdateESP()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local highlight = player.Character:FindFirstChild("ESPHighlight")
-            if Config.ESP then
-                if not highlight then
-                    highlight = Instance.new("Highlight")
-                    highlight.Name = "ESPHighlight"
-                    highlight.Parent = player.Character
-                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                end
-            else
-                if highlight then highlight:Destroy() end
-            end
-        end
-    end
+-- Função central do clique (chamada pelo Heartbeat)
+local function doUltraClick()
+    local mousePos = UserInputService:GetMouseLocation()
+    -- Adiciona uma pequena variação para simular o jitter do mouse
+    local x = mousePos.X + math.random(-1, 1)
+    local y = mousePos.Y + math.random(-1, 1)
+
+    -- Simula o clique na posição atual do mouse
+    VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+    VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+    
+    Config.ClickCount = Config.ClickCount + 1
 end
 
--- [[ INTERFACE RAYFIELD - ABAS ]]
+-- Função para atualizar o Display de CPS (chamada pelo RenderStepped)
+local function updateCPSDisplay(CPSLabel, TotalClicksLabel)
+    if tick() - lastUpdateTime >= 1 then
+        local cps = Config.ClickCount - lastClickCount
+        CPSLabel:Set("CPS Atual: " .. cps)
+        TotalClicksLabel:Set("Total de Cliques: " .. Config.ClickCount)
+        lastClickCount = Config.ClickCount
+        lastUpdateTime = tick()
+    end
+    -- Isso garante que o Total de Cliques seja atualizado constantemente, mesmo sem a contagem de 1 segundo.
+    TotalClicksLabel:Set("Total de Cliques: " .. Config.ClickCount)
+end
 
--- Aba Combate
-local MainTab = Window:CreateTab("Combate", 4483362458) -- Ícone de alvo
+---
+--- SEÇÃO: AUTO CLICKER (ULTRA SPEED) - MELHORADA
+---
+local ClickerTab = Window:CreateTab("Auto Clicker", 4483362458)
 
-MainTab:CreateToggle({
-   Name = "Ativar Aimbot",
-   CurrentValue = Config.Aimbot,
+local CPSLabel = ClickerTab:CreateLabel("CPS Atual: 0")
+local TotalClicksLabel = ClickerTab:CreateLabel("Total de Cliques: 0")
+
+ClickerTab:CreateToggle({
+   Name = "Ativar Auto Clicker (MAX SPEED)",
+   CurrentValue = Config.Clicking,
    Callback = function(Value)
-      Config.Aimbot = Value
+      Config.Clicking = Value
+      if Value then
+          -- Inicia o clique na velocidade máxima
+          heartbeatConn = RunService.Heartbeat:Connect(doUltraClick)
+          -- Inicia a atualização do display de CPS/Contador
+          cpsDisplayConn = RunService.RenderStepped:Connect(function()
+              updateCPSDisplay(CPSLabel, TotalClicksLabel)
+          end)
+      else
+          -- Desconecta ambas as conexões ao desativar
+          if heartbeatConn then heartbeatConn:Disconnect() heartbeatConn = nil end
+          if cpsDisplayConn then cpsDisplayConn:Disconnect() cpsDisplayConn = nil end
+          -- Atualiza o display final
+          updateCPSDisplay(CPSLabel, TotalClicksLabel)
+      end
    end,
 })
 
-MainTab:CreateToggle({
+ClickerTab:CreateButton({
+   Name = "Resetar Contador",
+   Callback = function()
+       Config.ClickCount = 0
+       lastClickCount = 0
+       TotalClicksLabel:Set("Total de Cliques: 0")
+       CPSLabel:Set("CPS Atual: 0")
+   end,
+})
+
+---
+--- SEÇÃO: COMBATE (AIMBOT)
+---
+local CombatTab = Window:CreateTab("Combate", 4483362458)
+
+CombatTab:CreateToggle({
+   Name = "Ativar Aimbot",
+   CurrentValue = Config.Aimbot,
+   Callback = function(Value) Config.Aimbot = Value end,
+})
+
+CombatTab:CreateToggle({
    Name = "Mostrar Círculo FOV",
    CurrentValue = Config.CircleVisible,
    Callback = function(Value)
@@ -163,7 +163,7 @@ MainTab:CreateToggle({
    end,
 })
 
-MainTab:CreateSlider({
+CombatTab:CreateSlider({
    Name = "Raio do FOV",
    Range = {50, 800},
    Increment = 10,
@@ -175,15 +175,9 @@ MainTab:CreateSlider({
    end,
 })
 
-MainTab:CreateToggle({ -- Novo Toggle para o Auto Clicker
-   Name = "Auto Clicker (MAX SPEED)",
-   CurrentValue = Config.AutoClicker,
-   Callback = function(Value)
-      toggleAutoClicker(Value)
-   end,
-})
-
--- Aba Visual
+---
+--- SEÇÃO: VISUAIS (ESP)
+---
 local VisualTab = Window:CreateTab("Visuais", 4483362458)
 
 VisualTab:CreateToggle({
@@ -192,7 +186,6 @@ VisualTab:CreateToggle({
    Callback = function(Value)
       Config.ESP = Value
       if not Value then
-          -- Limpa o ESP quando desligar
           for _, player in pairs(Players:GetPlayers()) do
               if player.Character and player.Character:FindFirstChild("ESPHighlight") then
                   player.Character.ESPHighlight:Destroy()
@@ -202,29 +195,45 @@ VisualTab:CreateToggle({
    end,
 })
 
--- [[ LOOP PRINCIPAL (RENDERSTEPPED) ]]
+---
+--- LOOP PRINCIPAL (RENDERSTEPPED - LÓGICA)
+---
+
+-- Conexão principal para Aimbot, ESP e FOV. O Clicker e CPS agora têm suas próprias conexões.
 RunService.RenderStepped:Connect(function()
-    -- Atualiza Círculo de FOV
+    -- Update FOV Circle
     FOVCircle.Position = UserInputService:GetMouseLocation()
     
-    -- Executa Aimbot
+    -- Aimbot Logic
     if Config.Aimbot then
-        AimbotTarget = GetClosestPlayer()
-        if AimbotTarget and AimbotTarget.Character and AimbotTarget.Character:FindFirstChild("Head") then
-            -- Aimbot - Mira suave na cabeça do alvo
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, AimbotTarget.Character.Head.Position)
-        else
-            AimbotTarget = nil -- Limpa o alvo se estiver fora
+        local target = GetClosestPlayer()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position)
         end
     end
     
-    -- Executa ESP
-    UpdateESP()
+    -- ESP Logic
+    if Config.ESP then
+        -- Esta lógica foi movida aqui para garantir que os highlights sejam criados
+        -- e persistam enquanto o ESP estiver ativo, sem depender da lógica de desligamento.
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                local highlight = player.Character:FindFirstChild("ESPHighlight")
+                if not highlight then
+                    highlight = Instance.new("Highlight")
+                    highlight.Name = "ESPHighlight"
+                    highlight.Parent = player.Character
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                end
+            end
+        end
+    end
 end)
 
 Rayfield:Notify({
-   Title = "Script Ativado",
-   Content = "KA Hub carregado com sucesso!",
+   Title = "KA Hub Unificado",
+   Content = "Auto Clicker e Aimbot carregados!",
    Duration = 5,
    Image = 4483362458,
 })
