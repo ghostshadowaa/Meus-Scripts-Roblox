@@ -95,7 +95,8 @@ local function updateCPSDisplay(CPSLabel, TotalClicksLabel)
     if tick() - lastUpdateTime >= 1 then
         local cps = Config.ClickCount - lastClickCount
         CPSLabel:Set("CPS Atual: " .. cps)
-        TotalClicksLabel:Set("Total de Cliques: " .. Config.ClickCount)
+        -- Não atualiza lastClickCount e lastUpdateTime aqui, pois será feito
+        -- no final do bloco do if, garantindo a contagem correta a cada segundo.
         lastClickCount = Config.ClickCount
         lastUpdateTime = tick()
     end
@@ -104,7 +105,7 @@ local function updateCPSDisplay(CPSLabel, TotalClicksLabel)
 end
 
 ---
---- SEÇÃO: AUTO CLICKER (ULTRA SPEED) - MELHORADA
+--- SEÇÃO: AUTO CLICKER (ULTRA SPEED) - CORRIGIDA
 ---
 local ClickerTab = Window:CreateTab("Auto Clicker", 4483362458)
 
@@ -116,18 +117,32 @@ ClickerTab:CreateToggle({
    CurrentValue = Config.Clicking,
    Callback = function(Value)
       Config.Clicking = Value
+      
       if Value then
-          -- Inicia o clique na velocidade máxima
+          -- CORREÇÃO: Desconecta e zera qualquer conexão antiga para evitar falhas.
+          if heartbeatConn then heartbeatConn:Disconnect() end
+          if cpsDisplayConn then cpsDisplayConn:Disconnect() end
+          
+          -- 1. Inicia o clique na velocidade máxima (Heartbeat)
           heartbeatConn = RunService.Heartbeat:Connect(doUltraClick)
-          -- Inicia a atualização do display de CPS/Contador
+          
+          -- 2. Inicia a atualização do display de CPS/Contador (RenderStepped)
           cpsDisplayConn = RunService.RenderStepped:Connect(function()
               updateCPSDisplay(CPSLabel, TotalClicksLabel)
           end)
+          
       else
-          -- Desconecta ambas as conexões ao desativar
-          if heartbeatConn then heartbeatConn:Disconnect() heartbeatConn = nil end
-          if cpsDisplayConn then cpsDisplayConn:Disconnect() cpsDisplayConn = nil end
-          -- Atualiza o display final
+          -- Desconecta e zera ambas as conexões ao desativar
+          if heartbeatConn then 
+              heartbeatConn:Disconnect()
+              heartbeatConn = nil -- ESSENCIAL para que o Toggle funcione na próxima vez
+          end
+          if cpsDisplayConn then 
+              cpsDisplayConn:Disconnect()
+              cpsDisplayConn = nil -- ESSENCIAL para que o Toggle funcione na próxima vez
+          end
+          
+          -- Garante que o display seja atualizado pela última vez ao parar
           updateCPSDisplay(CPSLabel, TotalClicksLabel)
       end
    end,
