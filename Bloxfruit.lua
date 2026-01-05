@@ -1,6 +1,43 @@
- [[ KA HUB | QUEST SYSTEM UI ]]
+local Rayfield = loadstring(game:HttpGet('https://[Log in to view URL]'))()
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Flee the facility
+
+if game.PlaceId == 137851560920458 or game.PlaceId == 893973440 then
+    local Window = Rayfield:CreateWindow({
+       Name = "Rayfield",
+       Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+       LoadingTitle = "Rayfield: Flee The Facility",
+       LoadingSubtitle = "by LemoNeedle",
+       Theme = "Default", -- Check https://[Log in to view URL]
+    
+       ToggleUIKeybind = "K", -- The keybind to toggle the UI visibility (string like "K" or Enum.KeyCode)
+    
+       DisableRayfieldPrompts = false,
+       DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+    
+       ConfigurationSaving = {
+          Enabled = true,
+          FolderName = nil, -- Create a custom folder for your hub/game
+          FileName = "rayfieldhub"
+       },
+    
+       Discord = {
+          Enabled = true, -- Prompt the user to join your Discord server if their executor supports it
+          Invite = "vegax", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
+          RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+       },
+    
+       KeySystem = true, -- Set this to true to use our key system
+       KeySettings = {
+          Title = "KA | Key",
+          Subtitle = "Flee The Facility",
+          Note = "Join discord server to get the key.", -- Use this to tell the user how to get a key
+          FileName = "rayfieldKey", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+          SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+          GrabKeyFromSite = true, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+          Key = {hub} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+       }
+    })
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayerif game.PlaceId == 2753915549 then
@@ -22,13 +59,7 @@ function CheckQuest()
             NameQuest = "BanditQuest1"
             NameMon = "Bandit"
             CFrameQuest = CFrame.new(1059.37195, 15.4495068, 1550.4231, 0.939700544, -0, -0.341998369, 0, 1, -0, 0.341998369, 0, 0.939700544)
-            CFrameMon = CFrame.new(1045.962646484375, 27.00250816345215, 1560.8203125)
-        elseif MyLevel == 10 or MyLevel <= 14 then
-            Mon = "Monkey"
-            LevelQuest = 1
-            NameQuest = "JungleQuest"
-            NameMon = "Monkey"
-            CFrameQuest = CFrame.new(-1598.08911, 35.5501175, 153.377838, 0, 0, 1, 0, 1, -0, -1, 0, 0)
+            CFrameMon = CFrame.new(1045.962646484375, .new(-1598.08911, 35.5501175, 153.377838, 0, 0, 1, 0, 1, -0, -1, 0, 0)
             CFrameMon = CFrame.new(-1448.51806640625, 67.85301208496094, 11.46579647064209)
         elseif MyLevel == 15 or MyLevel <= 29 then
             Mon = "Gorilla"
@@ -11373,55 +11404,62 @@ OrionLib:MakeNotification({
     Image = "rbxassetid://119980140458596",
     Time = 5
 })
- RAYFIELD (SÓ PARA QUEST)
--- =========================
-local Window = Rayfield:CreateWindow({
-   Name = "KA HUB | Quest System",
-   LoadingTitle = "CheckQuest Loader",
-   LoadingSubtitle = "Blox Fruits",
-   ConfigurationSaving = { Enabled = false }
-})
+ 
 
-local QuestTab = Window:CreateTab("Quest", 4483362458)
+    local MainTab = Window:CreateTab("Home", 121236226623941) -- Title, Image
+    local InfoSection = MainTab:CreateSection("Information")
 
-QuestTab:CreateButton({
-    Name = "Ver Quest Atual",
-    Callback = function()
-        CheckQuest()
+    Rayfield:Notify({
+       Title = "Rayfield",
+       Content = "Flee The Facility is now in YOUR hands.",
+       Duration = 6.5,
+       Image = 4483362458,
+    })
 
-        Rayfield:Notify({
-            Title = "Quest Detectada",
-            Content =
-                "Monstro: ".. tostring(Mon) ..
-                "\nQuest: ".. tostring(NameQuest) ..
-                "\nLevel Quest: ".. tostring(LevelQuest),
-            Duration = 6
-        })
-    end
-})
-
-QuestTab:CreateButton({
-    Name = "Teleportar para Quest",
-    Callback = function()
-        CheckQuest()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character:PivotTo(CFrameQuest)
+    local GameplayTab = Window:CreateTab("Gameplay", 110637137845622) -- Title, Image
+    local DefaultGameplaySection = GameplayTab:CreateSection("General")
+    local WalkSpeedSlider = GameplayTab:CreateSlider({
+       Name = "Walk Speed",
+       Range = {16, 100},
+       Increment = 1,
+       Suffix = "",
+       CurrentValue = 16,
+       Flag = "Slider1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+       Callback = function(Value)
+       game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+       end,
+    })
+    local InfiniteJumpButton = Tab:CreateButton({
+       Name = "Button Example",
+       Callback = function()
+              --Toggles the infinite jump between on or off on every script run
+        _G.infinjump = not _G.infinjump
+        
+        if _G.infinJumpStarted == nil then
+            --Ensures this only runs once to save resources
+            _G.infinJumpStarted = true
+            
+            --Notifies readiness
+            game.StarterGui:SetCore("SendNotification", {Title="Youtube Hub"; Text="Infinite Jump Activated!"; Duration=5;})
+        
+            --The actual infinite jump
+            local plr = game:GetService('Players').LocalPlayer
+            local m = plr:GetMouse()
+            m.KeyDown:connect(function(k)
+                if _G.infinjump then
+                    if k:byte() == 32 then
+                    humanoid = game:GetService'Players'.LocalPlayer.Character:FindFirstChildOfClass('Humanoid')
+                    humanoid:ChangeState('Jumping')
+                    wait()
+                    humanoid:ChangeState('Seated')
+                    end
+                end
+            end)
         end
-    end
-})
+       end,
+    })
 
-QuestTab:CreateButton({
-    Name = "Teleportar para Monstro",
-    Callback = function()
-        CheckQuest()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character:PivotTo(CFrameMon)
-        end
-    end
-})
+    local BeastSection = GameplayTab:CreateSection("Beast")
 
-Rayfield:Notify({
-    Title = "KA HUB",
-    Content = "Sistema de Quest carregado com sucesso!",
-    Duration = 5
-})
+    
+end
