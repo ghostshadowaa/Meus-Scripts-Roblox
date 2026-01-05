@@ -50,7 +50,7 @@ local function ToggleAimbot()
         if not LocalPlayer or not workspace.CurrentCamera then return end
         
         local Camera = workspace.CurrentCamera
-        local fovLimit = 60 -- Mantido para otimização
+        local fovLimit = 60
         
         AimbotConnection = RunService.RenderStepped:Connect(function()
             if not LocalPlayer.Character then return end
@@ -141,6 +141,7 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
+local CloseBtn = Instance.new("TextButton") -- Novo: Botão de fechar (X)
 local ESPBtn = Instance.new("TextButton")
 local AimbotBtn = Instance.new("TextButton")
 
@@ -154,15 +155,29 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.Position = UDim2.new(0.5, -100, 0.5, -75)
 MainFrame.Size = UDim2.new(0, 200, 0, 150)
 MainFrame.Active = true
-MainFrame.Draggable = true
+-- >>> CORREÇÃO CRÍTICA: Removendo o Draggable do Roblox para evitar rastros
+-- MainFrame.Draggable = true 
 MainFrame.Visible = false -- Começa oculto!
 
--- Título
+-- Título (Área para arrastar)
 Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.Text = "Menu de Auxílio [INSERT]"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Title.Active = true -- Essencial para capturar cliques e inputs
+
+-- Botão de Fechar (X)
+CloseBtn.Parent = Title
+CloseBtn.Size = UDim2.new(0, 30, 1, 0)
+CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.Text = "X"
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+
 
 -- Função auxiliar para criar botões com estilo
 local function CriarBotao(btn, texto, pos, cor)
@@ -172,7 +187,7 @@ local function CriarBotao(btn, texto, pos, cor)
     btn.Text = texto
     btn.BackgroundColor3 = cor
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.AnchorPoint = Vector2.new(0.5, 0) -- Centraliza melhor
+    btn.AnchorPoint = Vector2.new(0.5, 0)
     btn.Position = UDim2.new(0.5, 0, pos.Scale, pos.Offset)
 end
 
@@ -186,10 +201,46 @@ AimbotBtn.MouseButton1Click:Connect(ToggleAimbot)
 
 -- ** 6. LÓGICA DE ABRIR E FECHAR O PAINEL (TOGGLE) **
 
--- Usa a tecla 'Insert' (pode ser mudado para uma tecla mais comum se necessário)
 UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Insert then
+    if input.KeyCode == Enum.KeyCode.Insert and not UserInputService:GetFocusedTextBox() then
         MainFrame.Visible = not MainFrame.Visible
         print("Painel Toggle: " .. (MainFrame.Visible and "ABERTO" or "FECHADO"))
+    end
+end)
+
+
+-- ** 7. LÓGICA DE ARRASTAR MANUAL (SEM RASTROS) **
+
+local dragging = false
+local dragStart = Vector2.new(0, 0)
+local startPos = UDim2.new(0, 0, 0, 0)
+
+-- Inicia o arrastar quando o clique/toque começa no Título
+Title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        -- Evita que o clique seja propagado para outros elementos
+        UserInputService:SetMouseBehavior(Enum.MouseBehavior.LockCenter) 
+    end
+end)
+
+-- Atualiza a posição a cada movimento do mouse/toque
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Para o arrastar quando o clique/toque termina
+Title.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+        UserInputService:SetMouseBehavior(Enum.MouseBehavior.Default)
     end
 end)
