@@ -1,9 +1,5 @@
--- [[ KA HUB | ULTIMATE BUNDLE | DELTA FIXED ]]
 
--- Rayfield (link estável)
-local Rayfield = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/shlexware/Rayfield/main/source"
-))()
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
 
 -- Serviços
 local Players = game:GetService("Players")
