@@ -1,6 +1,4 @@
- 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayerif game.PlaceId == 2753915549 then
+if game.PlaceId == 2753915549 then
     World1 = true
 elseif game.PlaceId == 4442272183 then
     World2 = true
@@ -19,7 +17,13 @@ function CheckQuest()
             NameQuest = "BanditQuest1"
             NameMon = "Bandit"
             CFrameQuest = CFrame.new(1059.37195, 15.4495068, 1550.4231, 0.939700544, -0, -0.341998369, 0, 1, -0, 0.341998369, 0, 0.939700544)
-            CFrameMon = CFrame.new(1045.962646484375, .new(-1598.08911, 35.5501175, 153.377838, 0, 0, 1, 0, 1, -0, -1, 0, 0)
+            CFrameMon = CFrame.new(1045.962646484375, 27.00250816345215, 1560.8203125)
+        elseif MyLevel == 10 or MyLevel <= 14 then
+            Mon = "Monkey"
+            LevelQuest = 1
+            NameQuest = "JungleQuest"
+            NameMon = "Monkey"
+            CFrameQuest = CFrame.new(-1598.08911, 35.5501175, 153.377838, 0, 0, 1, 0, 1, -0, -1, 0, 0)
             CFrameMon = CFrame.new(-1448.51806640625, 67.85301208496094, 11.46579647064209)
         elseif MyLevel == 15 or MyLevel <= 29 then
             Mon = "Gorilla"
@@ -11279,7 +11283,7 @@ spawn(function()
             if game:GetService("Lighting").Sky.MoonTextureId=="http://www.roblox.com/asset/?id=9709149052" or game:GetService("Lighting").Sky.MoonTextureId=="http://www.roblox.com/asset/?id=9709149431" then
                 wait(2.0)
                 OrionLib:MakeNotification({
-                    Name = "KA Hub",
+                    Name = "Sla Hub",
                     Content = "Turn Off Hop Find Moon Please",
                     Image = "rbxassetid://119980140458596",
                     Time = 5
@@ -11287,7 +11291,7 @@ spawn(function()
             elseif game:GetService("Lighting").Sky.MoonTextureId=="http://www.roblox.com/asset/?id=9709143733" then
                 Hop()
                 OrionLib:MakeNotification({
-                    Name = "KA Hub",
+                    Name = "Sla Hub",
                     Content = "Hop Server",
                     Image = "rbxassetid://119980140458596",
                     Time = 5
@@ -11295,7 +11299,7 @@ spawn(function()
             elseif game:GetService("Lighting").Sky.MoonTextureId=="http://www.roblox.com/asset/?id=9709150401" then
                 Hop()
                 OrionLib:MakeNotification({
-                    Name = "KA Hub",
+                    Name = "Sla Hub",
                     Content = "Hop Server",
                     Image = "rbxassetid://119980140458596",
                     Time = 5
@@ -11303,7 +11307,7 @@ spawn(function()
             elseif game:GetService("Lighting").Sky.MoonTextureId=="http://www.roblox.com/asset/?id=9709149680" then
                 Hop()
                 OrionLib:MakeNotification({
-                    Name = "KA Hub",
+                    Name = "Sla Hub",
                     Content = "Hop Server",
                     Image = "rbxassetid://119980140458596",
                     Time = 5
@@ -11316,7 +11320,7 @@ spawn(function()
     end)
 
 OrionLib:MakeNotification({
-        Name = "KA Hub",
+        Name = "Sla Hub",
         Content = "Loading script complete!, You can now enable the function!",
         Image = "rbxassetid://119980140458596",
         Time = 5
@@ -11359,11 +11363,8 @@ end)
 OrionLib:Init()
 
 OrionLib:MakeNotification({
-    Name = "KA Hub",
+    Name = "Sla Hub",
     Content = "Loading Config Complete!!",
     Image = "rbxassetid://119980140458596",
     Time = 5
 })
- 
-
- 
