@@ -1,29 +1,29 @@
--- Shadow Hub PRO: API Edition (Auto-Update)
 local HttpService = game:GetService("HttpService")
 local Player = game:GetService("Players").LocalPlayer
 local TweenService = game:GetService("TweenService")
 
--- CONFIGURAÇÃO DO SEU GITHUB
+-- CONFIGURAÇÃO DO REPOSITÓRIO
 local OWNER = "ghostshadowaa"
 local REPO = "Shadow"
 local BRANCH = "main"
 
 local ScreenGui = Instance.new("ScreenGui", Player.PlayerGui)
-ScreenGui.Name = "ShadowSystemAPI"
-ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "ShadowManagerFinal"
+ScreenGui.DisplayOrder = 999 -- Garante que fique por cima de tudo
 
--- --- BOTÃO FLUTUANTE ---
-local OpenBtn = Instance.new("TextButton", ScreenGui)
-OpenBtn.Size = UDim2.new(0, 45, 0, 45)
-OpenBtn.Position = UDim2.new(0, 10, 0.5, -22)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-OpenBtn.Text = "S"
-OpenBtn.TextColor3 = Color3.fromRGB(0, 170, 255)
-OpenBtn.Font = Enum.Font.GothamBold
-OpenBtn.TextSize = 20
-Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
-local BtnStroke = Instance.new("UIStroke", OpenBtn)
-BtnStroke.Color = Color3.fromRGB(0, 170, 255)
+-- --- TELA DE CARREGAMENTO (SPLASH) ---
+local Splash = Instance.new("Frame", ScreenGui)
+Splash.Size = UDim2.new(1, 0, 1, 0)
+Splash.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+Splash.ZIndex = 100
+
+local SplashText = Instance.new("TextLabel", Splash)
+SplashText.Size = UDim2.new(1, 0, 1, 0)
+SplashText.Text = "SHADOW MANAGER\nLOADING ASSETS..."
+SplashText.Font = Enum.Font.GothamBold
+SplashText.TextColor3 = Color3.fromRGB(0, 170, 255)
+SplashText.TextSize = 24
+SplashText.BackgroundTransparency = 1
 
 -- --- PAINEL PRINCIPAL ---
 local Main = Instance.new("Frame", ScreenGui)
@@ -34,14 +34,16 @@ Main.Visible = false
 Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main)
-local MainStroke = Instance.new("UIStroke", Main)
-MainStroke.Color = Color3.fromRGB(0, 170, 255)
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(0, 170, 255)
+Stroke.Thickness = 2
 
 local Title = Instance.new("TextLabel", Main)
 Title.Size = UDim2.new(1, 0, 0, 50)
-Title.Text = "SHADOW MANAGER"
+Title.Text = "SHADOW HUB"
 Title.Font = Enum.Font.GothamBold
 Title.TextColor3 = Color3.new(1, 1, 1)
+Title.TextSize = 18
 Title.BackgroundTransparency = 1
 
 local Scroll = Instance.new("ScrollingFrame", Main)
@@ -52,32 +54,25 @@ Scroll.ScrollBarThickness = 2
 local Layout = Instance.new("UIListLayout", Scroll)
 Layout.Padding = UDim.new(0, 7)
 
--- --- FUNÇÃO DE EXECUÇÃO COM ANTI-CACHE ---
-local function ExecutarScript(url, nome)
-    print("Shadow Hub: Atualizando e Executando " .. nome)
-    -- O 'nocache' garante que ele baixe a versão que você acabou de salvar no GitHub
-    local antiCacheUrl = url .. "?t=" .. os.time() 
-    local s, conteudo = pcall(function() return game:HttpGet(antiCacheUrl) end)
+-- --- FUNÇÃO DE EXECUÇÃO E AUTO-CLOSE ---
+local function ExecutarScript(url)
+    -- Fecha e deleta o menu instantaneamente
+    ScreenGui:Destroy() 
+    
+    -- Busca o código atualizado (Anti-Cache)
+    local targetUrl = url .. "?t=" .. os.time()
+    local s, conteudo = pcall(function() return game:HttpGet(targetUrl) end)
     
     if s and conteudo then
-        local rodar, erro = loadstring(conteudo)
+        local rodar = loadstring(conteudo)
         if rodar then
-            Main.Visible = false
             rodar()
-        else
-            warn("Erro no script: " .. tostring(erro))
         end
-    else
-        warn("Erro ao baixar o arquivo do GitHub.")
     end
 end
 
--- --- BUSCA AUTOMÁTICA PELA API ---
-local function LoadFromAPI()
-    for _, child in pairs(Scroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-
+-- --- CARREGAR VIA API ---
+local function LoadAPI()
     local apiUrl = "https://api.github.com/repos/"..OWNER.."/"..REPO.."/contents?t="..os.time()
     local success, response = pcall(function() return game:HttpGet(apiUrl) end)
 
@@ -97,7 +92,7 @@ local function LoadFromAPI()
 
                 btn.MouseButton1Click:Connect(function()
                     local rawUrl = "https://raw.githubusercontent.com/"..OWNER.."/"..REPO.."/"..BRANCH.."/"..file.name
-                    ExecutarScript(rawUrl, file.name)
+                    ExecutarScript(rawUrl)
                 end)
             end
         end
@@ -105,30 +100,17 @@ local function LoadFromAPI()
     end
 end
 
--- Abrir/Fechar
-OpenBtn.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
-    if Main.Visible then LoadFromAPI() end -- Atualiza a lista toda vez que abrir
-end)
-
--- Tela de Loading Inicial
-local Splash = Instance.new("Frame", ScreenGui)
-Splash.Size = UDim2.new(1, 0, 1, 0)
-Splash.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-Splash.ZIndex = 100
-local STxt = Instance.new("TextLabel", Splash)
-STxt.Size = UDim2.new(1, 0, 1, 0)
-STxt.Text = "SYNCING WITH GITHUB..."
-STxt.TextColor3 = Color3.fromRGB(0, 170, 255)
-STxt.Font = Enum.Font.GothamBold
-STxt.TextSize = 20
-STxt.BackgroundTransparency = 1
-
+-- --- INICIALIZAÇÃO COM TELA DE LOADING ---
 task.spawn(function()
-    LoadFromAPI()
-    task.wait(1.5)
+    -- Garante que a Splash apareça antes de qualquer processamento
+    Splash.Visible = true 
+    LoadAPI()
+    task.wait(2) -- Tempo para o usuário ver a tela de loading profissional
+    
+    -- Transição para o Menu
     TweenService:Create(Splash, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(STxt, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+    TweenService:Create(SplashText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
     task.wait(0.5)
     Splash.Visible = false
+    Main.Visible = true
 end)
