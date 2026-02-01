@@ -7,9 +7,9 @@ local TweenService = game:GetService("TweenService")
 -- SEÇÃO DE CONFIGURAÇÃO MANUAL (ADICIONE SEUS LINKS AQUI)
 -- ==========================================================
 local SCRIPTS_MANUAIS = {
-    -- Formato: ["Nome do Botão"] = "Link do Raw"
+    
     ["Don't Steal Famous"] = "https://raw.githubusercontent.com/ghostshadowaa/Shadow/main/Don%27t%20steal%20a%20famous.lua",
-    ["Meu Novo Script"]    = "https://link-do-seu-script-aqui.lua",
+    
     -- Adicione quantos quiser seguindo o padrão acima
 }
 -- ==========================================================
